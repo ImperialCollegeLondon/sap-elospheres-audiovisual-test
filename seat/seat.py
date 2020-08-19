@@ -1,4 +1,6 @@
 import probestrategy
+from avrenderercontrol import ListeningEffortPlayerAndTascarUsingOSC
+
 # import gui
 
 import PySimpleGUI as sg
@@ -37,18 +39,31 @@ def isValidResponse(response):
     return True
         
 
-def runExperiment():
+def runExperiment(config):
     
     # settings
     preTrialDelay=(0.2,1)
     
     
+    # AVRendererControl
+    
+    
+    
+    # ProbeStrategy
+    probeLevel=-3
+    nTrials = 6    
+    
+    
+    
     # setup the test
-    probeLevel=0.6
-    nTrials = 6
     ps = probestrategy.FixedProbeLevel(probeLevel,nTrials)
+    avrenderer = ListeningEffortPlayerAndTascarUsingOSC()
+    avrenderer.loadConfig(config["AVRendererControl"])
     
     
+    
+    
+    # setup the gui
     psKey='-ProbeDetails-'
     materialsKey='-Materials-'
     responseKey='-Response-'
@@ -60,8 +75,25 @@ def runExperiment():
     window = sg.Window('SAP ELO-SPHERES AV Test', layout,finalize=True, use_default_focus=False)
     
     # start test
- #    - play background video
- #    - play background audio
+    #    - play background video
+    #    - play background audio
+    avrenderer.startScene()
+    
+    
+    # wait for experimenter
+    while True:
+        window[responseKey].update('Press Next when ready to proceed with test')
+        event, values = window.read()
+        print(event, values)
+        if event == sg.WIN_CLOSED:
+            window.close()
+            return
+        if event == 'Next':
+            break
+                
+                
+        
+    
 
     # main loop
     while (ps.isFinished()==False):
@@ -81,13 +113,14 @@ def runExperiment():
 
         # - prepareTrial
         #     e.g. send OSC commands to set levels of source(s)
+        avrenderer.setProbeLevel(probeLevel)
 
         # - pause (random duration between preTrialDelay[0] and preTrialDelay[1])
         time.sleep(preTrialDelay[0]+(preTrialDelay[1]-preTrialDelay[0])*random.random())
 
         # - [present stimulus/mixture]
             # e.g. send OSC commands to start videos/samplers
-
+        avrenderer.presentNextTrial()
         
         # - getResponse
         # e.g. enable experimenter UI controls, wait for button press, log response
@@ -111,8 +144,6 @@ def runExperiment():
                     # - storeTrialResult
                     ps.storeTrialResult(result)
                     
-                    
-                    
                     break
         
     # test done so tidy up
@@ -129,4 +160,13 @@ def runExperiment():
 
 
 if __name__ == '__main__':
-    runExperiment()
+    config = {
+        "AVRendererControl": {
+            "localDataRoot": "/Users/amoore1/Dropbox/ELOSPHERES/data",
+            "unityDataRoot": "C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data",
+            "tascarDataRoot": "/home/amoore1/data",
+            "skybox": "_measures_project/Videos/Masking/two_behind.MP4",
+            "lists": ["20200819_seat_config/asl_1.txt","20200819_seat_config/Quentin_IEEE.txt","20200819_seat_config/bkb_1.txt"]
+        }
+        }
+    runExperiment(config)
