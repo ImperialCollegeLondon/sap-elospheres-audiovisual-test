@@ -165,8 +165,8 @@ if __name__ == '__main__':
             "localDataRoot": "/Users/amoore1/Dropbox/ELOSPHERES/data",
             "unityDataRoot": "C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data",
             "tascarDataRoot": "/home/amoore1/data",
-            "skybox": "_measures_project/Videos/Masking/two_behind.MP4",
-            "lists": ["20200819_seat_config/asl_1.txt","20200819_seat_config/Quentin_IEEE.txt","20200819_seat_config/bkb_1.txt"]
+            "skybox": "C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data\\_measures_project\\Videos/Masking\\two_behind.MP4",
+            "lists": ["20200824_seat_config/bkb_1.txt","20200824_seat_config/bkb_2.txt","20200824_seat_config/bkb_3.txt"]
         }
         }
     runExperiment(config)

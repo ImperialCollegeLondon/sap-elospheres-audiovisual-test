@@ -151,6 +151,7 @@ class ListeningEffortPlayerAndTascarUsingOSC(AVRendererControl):
     def convertPath(self, ubuntuWavPath):
         windows_root="C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data\\"
         ubuntu_root="/home/amoore1/Dropbox/ELOSPHERES/data/"
+        ubuntu_root="/Users/amoore1/Dropbox/ELOSPHERES/data/"
         windowsVideoPath = windows_root + '\\' + ubuntuWavPath.replace(ubuntu_root,'').replace('/','\\').replace('.wav','.mp4')
         # print(windowsVideoPath)
         return windowsVideoPath
