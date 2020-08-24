@@ -34,9 +34,9 @@
 	</scene>
 
 	<modules>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9001 /home/amoore1/data/20200824_seat_config/bkb_1.txt source1"/>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9003 /home/amoore1/data/20200824_seat_config/bkb_2.txt source2"/>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9005 /home/amoore1/data/20200824_seat_config/bkb_3.txt source3" sleep="0.5"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9001 /home/alastair/home/Dropbox/ELOSPHERES/data/20200824_seat_config/bkb_1.txt source1"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9003 /home/alastair/home/Dropbox/ELOSPHERES/data/20200824_seat_config/bkb_2.txt source2"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9005 /home/alastair/home/Dropbox/ELOSPHERES/data/20200824_seat_config/bkb_3.txt source3" sleep="0.5"/>
   </modules>
 
 <!-- connect all files/samples from each sampler to their respective source -->
