@@ -27,42 +27,43 @@ def isValidResponse(response):
     except:
         print('Not a number')
         return False
-        
+
     if (response < 0) or (response > 5):
         print('Out of range')
         return False
-        
+
     if (np.remainder(response,1)!=0):
         print('Not an integer')
         return False
-    
+
     return True
-        
+
 
 def runExperiment(config):
-    
+
     # settings
     preTrialDelay=(0.2,1)
-    
-    
+
+
     # AVRendererControl
-    
-    
-    
+
+
+
     # ProbeStrategy
     probeLevel=-3
-    nTrials = 6    
-    
-    
-    
+    nTrials = 6
+
+
+
     # setup the test
     ps = probestrategy.FixedProbeLevel(probeLevel,nTrials)
     avrenderer = ListeningEffortPlayerAndTascarUsingOSC()
-    avrenderer.loadConfig(config["AVRendererControl"])
-    
-    
-    
-    
+    success = avrenderer.loadConfig(config["AVRendererControl"])
+    if (!success):
+        print("Failed to open renderer")
+        return
+
+
     # setup the gui
     psKey='-ProbeDetails-'
     materialsKey='-Materials-'
@@ -71,15 +72,15 @@ def runExperiment(config):
               [sg.Text('Keywords:'),    sg.Text(size=(80,1), key=materialsKey)],
               [sg.Input(key=responseKey,focus=True)],
               [sg.Button('Next')]]
-    
+
     window = sg.Window('SAP ELO-SPHERES AV Test', layout,finalize=True, use_default_focus=False)
-    
+
     # start test
     #    - play background video
     #    - play background audio
     avrenderer.startScene()
-    
-    
+
+
     # wait for experimenter
     while True:
         window[responseKey].update('Press Next when ready to proceed with test')
@@ -90,26 +91,26 @@ def runExperiment(config):
             return
         if event == 'Next':
             break
-                
-                
-        
-    
+
+
+
+
 
     # main loop
     while (ps.isFinished()==False):
-    
+
         # doTrial
         # - getProbeLevel
         thisProbeLevel = ps.getNextProbeLevel()
-        
+
         thisTrialMaterial = random.sample(['Boy', 'Girl', 'Dog', 'Cat', 'Plane','Car',
                                     'Sun','Moon'], k=5)
-        
+
         # - showExperimenterUI
         window[psKey].update(str(thisProbeLevel))
         window[materialsKey].update(str(thisTrialMaterial))
         window[responseKey].update('')
-        
+
 
         # - prepareTrial
         #     e.g. send OSC commands to set levels of source(s)
@@ -121,7 +122,7 @@ def runExperiment(config):
         # - [present stimulus/mixture]
             # e.g. send OSC commands to start videos/samplers
         avrenderer.presentNextTrial()
-        
+
         # - getResponse
         # e.g. enable experimenter UI controls, wait for button press, log response
         # validResponse=False
@@ -143,17 +144,17 @@ def runExperiment(config):
 
                     # - storeTrialResult
                     ps.storeTrialResult(result)
-                    
+
                     break
-        
+
     # test done so tidy up
     # - stop background video/sound
-    # - 
+    # -
     window.close()
-    
+
     print(str(ps.getCurrentEstimate()))
     return
-      
+
 
 
 
@@ -169,4 +170,5 @@ if __name__ == '__main__':
             "lists": ["20200824_seat_config/bkb_1.txt","20200824_seat_config/bkb_2.txt","20200824_seat_config/bkb_3.txt"]
         }
         }
+
     runExperiment(config)

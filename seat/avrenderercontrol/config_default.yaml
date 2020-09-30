@@ -1,0 +1,20 @@
+# settings required for OSC communications using
+# ListeningEffortPlayerAndTascarUsingOSC implementation of AVRendererControl
+unity:
+  ipaddress: '127.0.0.1'
+  oscport: 7000
+tascar:
+  ipenvvariable: 'SEAT_POSE_OSC_DEST'
+  ipaddress: ''
+  oscport: 9877
+sampler:
+  ipaddress: '239.255.1.7' # multicast
+  source1:
+    oscport: 9001
+    name: source1
+  source2:
+    oscport: 9003
+    name: source2
+  source3:
+    oscport: 9005
+    name: source3

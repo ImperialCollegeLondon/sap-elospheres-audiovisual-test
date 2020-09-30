@@ -9,18 +9,20 @@ START_LOCAL_SCRIPT=Path(module_path,"start_local.ps1")
 START_REMOTE_SCRIPT=Path(module_path,"start_wsl.ps1")
 TEST_REMOTE_METRONOME_SCRIPT=Path(module_path,"test_metronome.ps1")
 
-def start():
-    subprocess.run(["powershell.exe",START_LOCAL_SCRIPT], shell=True, check=True)
-    subprocess.run(["powershell.exe",START_REMOTE_SCRIPT], shell=True, check=True)
-
-def testMetronomeManual():
-    subprocess.run(["powershell.exe",TEST_REMOTE_METRONOME_SCRIPT], check=True)
+class JackTripControl:
+    # TODO: add state checks for jack and jacktrip processes on local and remote
+    def __init__(self):
+        self.isRunning = False;
 
 
-def stop():
-    # TODO: implement killing of all the processes
-    pass
+    def start(self):
+        subprocess.run(["powershell.exe",START_LOCAL_SCRIPT], shell=True, check=True)
+        subprocess.run(["powershell.exe",START_REMOTE_SCRIPT], shell=True, check=True)
+        self.isRunning = True
 
-if __name__ == '__main__':
-    start()
-    testMetronomeManual()
+    def stop(self):
+        if self.isRunning:
+            pass #TODO kill the processes
+
+    def testMetronomeManual(self):
+        subprocess.run(["powershell.exe",TEST_REMOTE_METRONOME_SCRIPT], check=True)
