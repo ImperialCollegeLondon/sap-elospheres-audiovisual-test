@@ -16,8 +16,10 @@ class JackTripControl:
 
 
     def start(self):
-        subprocess.run(["powershell.exe",START_LOCAL_SCRIPT], shell=True, check=True)
+        # start remote scrip first because we it saves its IP address to a file
+        # that is read by the local script
         subprocess.run(["powershell.exe",START_REMOTE_SCRIPT], shell=True, check=True)
+        subprocess.run(["powershell.exe",START_LOCAL_SCRIPT], shell=True, check=True)
         self.isRunning = True
 
     def stop(self):

@@ -58,7 +58,9 @@ class ListeningEffortPlayerAndTascarUsingOSC(AVRendererControl):
         print('config tascar.ipaddress:' + tascar_ipaddress)
         if not self.isValidIPAddress(tascar_ipaddress):
             variablename=self.moduleConfig['tascar']['ipenvvariable'].get(str)
-            tascar_ipaddress = os.environ.get(variablename)
+            filename=os.environ.get(variablename)
+            with open(filename, "r") as myfile:
+                tascar_ipaddress = myfile.readline().strip()
             print('env {}: {}'.format(variablename, tascar_ipaddress))
             if not self.isValidIPAddress(tascar_ipaddress):
                 # failed to get a valid ipaddress

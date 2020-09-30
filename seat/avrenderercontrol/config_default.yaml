@@ -4,7 +4,7 @@ unity:
   ipaddress: '127.0.0.1'
   oscport: 7000
 tascar:
-  ipenvvariable: 'SEAT_POSE_OSC_DEST'
+  ipenvvariable: 'JTC_REMOTE_IP_SETTING'
   ipaddress: ''
   oscport: 9877
 sampler:

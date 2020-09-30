@@ -1,5 +1,7 @@
+$cached_ip_path=[Environment]::GetEnvironmentVariable("JTC_REMOTE_IP_SETTING", "User")
+
 "Getting IP address of remote machine"
-$client_ip=[Environment]::GetEnvironmentVariable("SEAT_POSE_OSC_DEST", "User")
+$client_ip = Get-Content -Path $cached_ip_path
 "client:" + $client_ip
 
 "Starting jack..."
