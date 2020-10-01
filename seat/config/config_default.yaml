@@ -1,0 +1,31 @@
+# listening conditions describes the overall setup of an audiovisual environment
+# TODO: Make treatment of paths more elegant
+paths:
+  unity_data:
+    root_dir: C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test\seat\demo_data
+    skybox_rel_dir: skybox
+  tascar_data:
+    root_dir: /mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data
+    materials_rel_dir: avspeech/frl
+
+listening_conditions:
+  # list of available listening_conditions
+  # order is unimportant
+  # id must be unique but need not be numerical
+  - id: 0
+    decription: Demo - native binaural - tone in noise
+    avrenderer:
+      class: ListeningEffortPlayerAndTascarUsingOSC
+      tascar_scn_file: 00_binaural_demo.tsc
+      skybox_file: oticon_sphere_static_silent.mp4
+  - id: 1
+    decription: Three anechoic sources - native binaural
+    avrenderer:
+      class: ListeningEffortPlayerAndTascarUsingOSC
+      tascar_scn_file: 01_three_anechoic_sources_native_binaural.tsc
+      skybox_file: oticon_sphere_static_silent.mp4
+
+blocks:
+  - id: 1
+    listening_condition_id: 0
+    stimuli_list:

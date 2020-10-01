@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<session name="wsltest" attribution="Alastair H Moore" loop="true" duration="4" playonload="true">
+	<scene name="main" guiscale="8">
+		<source name="circular_clicks">
+			<position loop="4" interpolation='spherical'>
+				0      -2  -0.0000001 0
+				1       0  -2         0
+				2       2   0         0
+				3       0   2         0
+				3.999  -2   0         0
+			</position>
+			<sound>
+				<plugins>
+					<pulse f="20" a="0.4"/>
+			</plugins>
+			</sound>
+		</source>
+		<source name="left">
+			<position >
+				0      0  -2  0
+			</position>
+			<sound>
+				<plugins>
+					<pink level="45" fmax="16000"/>
+					<!-- <noise level="38"/> -->
+			</plugins>
+			</sound>
+		</source>
+		<source name="right">
+			<position >
+				0      0  2  0
+			</position>
+			<sound>
+				<plugins>
+					<sine f="440" a="40"/>
+					<sine f="880" a="40"/>
+					<sine f="1760" a="40"/>
+			</plugins>
+			</sound>
+		</source>
+		<receiver name="out" type="hrtf">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+
+	<modules>
+	</modules>
+
+<connect src="render.main:out_l" dest="JackTrip:send_1" />
+<connect src="render.main:out_r" dest="JackTrip:send_2" />
+</session>

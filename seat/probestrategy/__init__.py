@@ -1,2 +1,2 @@
-from .probestrategy import ProbeStrategy
-from .fixedprobelevel import FixedProbeLevel
+from .probe_strategy import ProbeStrategy
+from .fixed_probe_level import FixedProbeLevel
