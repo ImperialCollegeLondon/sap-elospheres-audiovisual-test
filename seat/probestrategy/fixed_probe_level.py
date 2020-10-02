@@ -1,10 +1,13 @@
 from .probe_strategy import ProbeStrategy
 import numpy as np
 
+
 class FixedProbeLevel(ProbeStrategy):
-
-
-    def __init__(self,level,numTrials):
+    """
+    The probe level does not change. Stopping criterion is the predetermined
+    number of trials.
+    """
+    def __init__(self, level, numTrials):
         self.level = level
         self.numTrials = numTrials
         self.storedResults = []

@@ -12,15 +12,15 @@ from pythonosc import udp_client
 # leading underscore avoids being imported
 
 
-def _is_valid_ipaddress(addressToTest):
+def _is_valid_ipaddress(address_to_test):
     """Private function to check validity of an ip address"""
     try:
-        parsedAddress = ipaddress.ip_address(addressToTest)
-        print('parsedAddress:' + str(parsedAddress))
+        parsed_address = ipaddress.ip_address(address_to_test)
+        print('parsed address:' + str(parsed_address))
         return True
     except ValueError as err:
         print(err)
-        print('Invalid address:', addressToTest)
+        print('Invalid address:', address_to_test)
         return False
 
 
@@ -32,8 +32,8 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
     """
     def __init__(self):
         # get the IP addresses
-        appName = 'ListeningEffortPlayerAndTascarUsingOSC'
-        self.moduleConfig = confuse.Configuration(appName, __name__)
+        app_name = 'ListeningEffortPlayerAndTascarUsingOSC'
+        self.moduleConfig = confuse.Configuration(app_name, __name__)
 
     # implement conext manager magic
     def __enter__(self):
@@ -147,7 +147,7 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
     def start_scene(self):
         pass
 
-    def set_probe_level(self, probeLevel):
+    def set_probe_level(self, probe_level):
         pass
 
     def present_next_trial(self):
