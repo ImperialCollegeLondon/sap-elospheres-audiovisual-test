@@ -16,8 +16,7 @@ class AVRCState(Enum):
     INIT = 0
     CONFIGURED = 1
     READY_TO_START = 2
-    ACTIVE_IDLE = 3
-    ACTIVE_TRIAL = 4
+    ACTIVE = 3
 
 
 class AVRendererControl(ABC):

@@ -7,6 +7,8 @@ import pprint
 import ipaddress
 import os
 from pythonosc import udp_client
+import time
+import subprocess
 
 # helper functions
 # leading underscore avoids being imported
@@ -100,6 +102,30 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         if hasattr(self, 'sampler_client3'):
             self.sampler_client3._sock.close()
 
+    def start_scene(self):
+        """
+        Basic implementation - subclasses may need to override
+        """
+        if self.state == avrc.AVRCState.READY_TO_START:
+            # launch tascar
+            subprocess.run([
+                "wsl.exe",
+                "-u root bash -c "
+                "\"tascar_cli demo_data/tascar_scenes/00_binaural_demo.tsc\""
+                ])
+
+            # one shot for the background
+            self.video_client.send_message(
+                "/video/play", [0, self.skybox_absolute_path])
+            self.tascar_client.send_message("/transport/locate", [0.0])
+            self.tascar_client.send_message("/transport/start", [])
+            self.nextStimulusIndex = 0
+            self.state = avrc.AVRCState.ACTIVE
+        else:
+            # TODO: Can we automate progressing through states rather than just
+            # falling over?
+            raise RuntimeError("Cannot start scene before it has been setup")
+
 
 class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
     """
@@ -141,14 +167,29 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
         skybox_filename = lc_config["avrenderer"]["skybox_file"].get(str)
         self.skybox_absolute_path = pathlib.Path(skybox_dir, skybox_filename)
 
-    def setup(self):
-        pass
+        self.state = avrc.AVRCState.CONFIGURED
 
-    def start_scene(self):
-        pass
+    def setup(self):
+        """Inherited public interface for setup"""
+        if self.state == avrc.AVRCState.CONFIGURED:
+            try:
+                self.setup_osc()
+            except Exception as err:
+                print('Encountered error in setup_osc():')
+                print(err)
+                print('Perhaps configuration had errors...reload config')
+                self.state = avrc.AVRCState.INIT
+            else:
+                avrc.AVRCState.READY_TO_START
+        else:
+            raise RuntimeError('Cannot call setup() before it has been '
+                               'configured')
 
     def set_probe_level(self, probe_level):
         pass
 
     def present_next_trial(self):
-        pass
+        # unmute target
+        self.tascar_client.send_message(["/main/target/mute", [0]])
+        time.sleep(1.0)
+        self.tascar_client.send_message(["/main/target/mute", [1]])

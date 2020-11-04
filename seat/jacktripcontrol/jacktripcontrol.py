@@ -36,3 +36,8 @@ class JackTripControl:
     def testMetronomeManual(self):
         subprocess.run(["powershell.exe", TEST_REMOTE_METRONOME_SCRIPT],
                        check=True)
+
+
+if __name__ == '__main__':
+    jtc = JackTripControl()
+    jtc.start()
