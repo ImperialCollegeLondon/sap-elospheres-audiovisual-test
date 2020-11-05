@@ -1,23 +1,21 @@
 from abc import ABC, abstractmethod
-import numpy as np
+
 
 class ProbeStrategy(ABC):
     """Abstract base class to define the interface"""
 
     @abstractmethod
-    def storeTrialResult(self, result):
+    def store_trial_result(self, result):
         pass
 
-    @abstractmethod        
-    def getNextProbeLevel(self):
-        pass
-        
     @abstractmethod
-    def getCurrentEstimate(self):
+    def get_next_probe_level(self):
         pass
-    
+
     @abstractmethod
-    def isFinished(self):
+    def get_current_estimate(self):
         pass
-        
-        
+
+    @abstractmethod
+    def is_finished(self):
+        pass

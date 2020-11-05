@@ -1,13 +1,13 @@
 import probestrategy
-from avrenderercontrol import ListeningEffortPlayerAndTascarUsingOSC
+import avrenderercontrol
 
 # import gui
 
 import PySimpleGUI as sg
-
-import time, random
+import importlib
+import time
+import random
 import numpy as np
-
 
 
 # def getLayout():
@@ -18,8 +18,9 @@ import numpy as np
 
 def scoreResponse(response):
     """Temporary function in liu of an extensible approach"""
-    #convert a string representing int between 0 and 5 to a fraction
+    # convert a string representing int between 0 and 5 to a fraction
     return float(response)/5
+
 
 def isValidResponse(response):
     try:
@@ -32,143 +33,147 @@ def isValidResponse(response):
         print('Out of range')
         return False
 
-    if (np.remainder(response,1)!=0):
+    if (np.remainder(response, 1) != 0):
         print('Not an integer')
         return False
 
     return True
 
 
-def runExperiment(config):
+def instance_builder(config):
+    """ Returns a class instance given a dict with keys
+        class: fully qualified class name
+        settings: dict of parameters which the class constructor takes
+    """
+    module_name, class_name = config["class"].rsplit(".", 1)
+    callable_class_constructor = getattr(importlib.import_module(module_name),
+                                         class_name)
+    return callable_class_constructor(config["settings"])
+
+
+def run_block(config):
 
     # settings
-    preTrialDelay=(0.2,1)
-
+    pre_trial_delay = (0.1, 0.2)
 
     # AVRendererControl
+    with instance_builder(config["AVRendererControl"]) as avrenderer:
 
+        # ProbeStrategy
+        probe_strategy = instance_builder(config["ProbeStrategy"])
 
+        # TODO: validate that the probe strategy is compatable with the avrenderer
 
-    # ProbeStrategy
-    probeLevel=-3
-    nTrials = 6
+        # setup the gui
+        ps_key = '-ProbeDetails-'
+        materials_key = '-Materials-'
+        response_key = '-Response-'
+        layout = [[sg.Text('Probe level:'), sg.Text(size=(15, 1), key=ps_key)],
+                  [sg.Text('Keywords:'), sg.Text(size=(80, 1), key=materials_key)],
+                  [sg.Input(key=response_key, focus=True)],
+                  [sg.Button('Next')]]
 
+        window = sg.Window('SAP ELO-SPHERES AV Test', layout,
+                           finalize=True, use_default_focus=False)
 
+        # start test
+        #    - play background video
+        #    - play background audio
+        avrenderer.start_scene()
 
-    # setup the test
-    ps = probestrategy.FixedProbeLevel(probeLevel,nTrials)
-    avrenderer = ListeningEffortPlayerAndTascarUsingOSC()
-    success = avrenderer.loadConfig(config["AVRendererControl"])
-    if (!success):
-        print("Failed to open renderer")
-        return
-
-
-    # setup the gui
-    psKey='-ProbeDetails-'
-    materialsKey='-Materials-'
-    responseKey='-Response-'
-    layout = [[sg.Text('Probe level:'), sg.Text(size=(15,1), key=psKey)],
-              [sg.Text('Keywords:'),    sg.Text(size=(80,1), key=materialsKey)],
-              [sg.Input(key=responseKey,focus=True)],
-              [sg.Button('Next')]]
-
-    window = sg.Window('SAP ELO-SPHERES AV Test', layout,finalize=True, use_default_focus=False)
-
-    # start test
-    #    - play background video
-    #    - play background audio
-    avrenderer.startScene()
-
-
-    # wait for experimenter
-    while True:
-        window[responseKey].update('Press Next when ready to proceed with test')
-        event, values = window.read()
-        print(event, values)
-        if event == sg.WIN_CLOSED:
-            window.close()
-            return
-        if event == 'Next':
-            break
-
-
-
-
-
-    # main loop
-    while (ps.isFinished()==False):
-
-        # doTrial
-        # - getProbeLevel
-        thisProbeLevel = ps.getNextProbeLevel()
-
-        thisTrialMaterial = random.sample(['Boy', 'Girl', 'Dog', 'Cat', 'Plane','Car',
-                                    'Sun','Moon'], k=5)
-
-        # - showExperimenterUI
-        window[psKey].update(str(thisProbeLevel))
-        window[materialsKey].update(str(thisTrialMaterial))
-        window[responseKey].update('')
-
-
-        # - prepareTrial
-        #     e.g. send OSC commands to set levels of source(s)
-        avrenderer.setProbeLevel(probeLevel)
-
-        # - pause (random duration between preTrialDelay[0] and preTrialDelay[1])
-        time.sleep(preTrialDelay[0]+(preTrialDelay[1]-preTrialDelay[0])*random.random())
-
-        # - [present stimulus/mixture]
-            # e.g. send OSC commands to start videos/samplers
-        avrenderer.presentNextTrial()
-
-        # - getResponse
-        # e.g. enable experimenter UI controls, wait for button press, log response
-        # validResponse=False
-        while True: #validResponse==False:
-            window[responseKey].set_focus()
+        # wait for experimenter
+        while True:
+            window[response_key].update(
+                'Press Next when ready to proceed with test')
             event, values = window.read()
             print(event, values)
             if event == sg.WIN_CLOSED:
-                # can't avoid it so just make sure we save the state
-                print(str(ps.getCurrentEstimate()))
                 window.close()
                 return
             if event == 'Next':
-                # validate response
-                if isValidResponse(values[responseKey]):
-                    # - scoreResponse
-                    # may need some conversion from what UI returns and what the actual result is
-                    result = scoreResponse(values[responseKey])
+                break
 
-                    # - storeTrialResult
-                    ps.storeTrialResult(result)
+        # main loop
+        while not probe_strategy.is_finished():
 
-                    break
+            # doTrial
+            # - getProbeLevel
+            probe_level = probe_strategy.get_next_probe_level()
 
-    # test done so tidy up
-    # - stop background video/sound
-    # -
-    window.close()
+            thisTrialMaterial = random.sample(
+                ['Boy', 'Girl', 'Dog', 'Cat', 'Plane', 'Car', 'Sun', 'Moon'], k=5)
 
-    print(str(ps.getCurrentEstimate()))
-    return
+            # - showExperimenterUI
+            window[ps_key].update(str(probe_level))
+            window[materials_key].update(str(thisTrialMaterial))
+            window[response_key].update('')
 
+            # - prepareTrial
+            #     e.g. send OSC commands to set levels of source(s)
+            avrenderer.set_probe_level(probe_level)
 
+            # - pause
+            # (random duration between preTrialDelay[0] and preTrialDelay[1])
+            time.sleep(pre_trial_delay[0]
+                       + (pre_trial_delay[1]-pre_trial_delay[0]) * random.random())
 
+            # - [present stimulus/mixture]
+            # e.g. send OSC commands to start videos/samplers
+            avrenderer.present_next_trial()
 
+            # - getResponse
+            # e.g. enable experimenter UI controls,
+            #      wait for button press,
+            #      log response
+            # validResponse=False
+            while True:  # validResponse==False:
+                window[response_key].set_focus()
+                event, values = window.read()
+                print(event, values)
+                if event == sg.WIN_CLOSED:
+                    # can't avoid it so just make sure we save the state
+                    print(str(probe_strategy.get_current_estimate()))
+                    window.close()
+                    return
+                if event == 'Next':
+                    # validate response
+                    if isValidResponse(values[response_key]):
+                        # - scoreResponse
+                        # may need some conversion from what UI returns and what
+                        # the actual result is
+                        result = scoreResponse(values[response_key])
+
+                        # - storeTrialResult
+                        probe_strategy.store_trial_result(result)
+
+                        break
+
+        # test done so tidy up
+        # - stop background video/sound
+        window.close()
+
+        print(str(probe_strategy.get_current_estimate()))
+        return
 
 
 if __name__ == '__main__':
-    config = {
+    import pathlib
+    this_directory = pathlib.Path(__file__).parent.absolute()
+    data_root_dir = pathlib.Path(this_directory,
+                                 "demo_data", "01_TargetToneInNoise")
+    block_config = {
         "AVRendererControl": {
-            "localDataRoot": "/Users/amoore1/Dropbox/ELOSPHERES/data",
-            "unityDataRoot": "C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data",
-            "tascarDataRoot": "/home/amoore1/data",
-            "skybox": "C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data\\_measures_project\\Videos/Masking\\two_behind.MP4",
-            "lists": ["20200824_seat_config/bkb_1.txt","20200824_seat_config/bkb_2.txt","20200824_seat_config/bkb_3.txt"]
+            "class": "avrenderercontrol.osc_tascar_wsl.TargetToneInNoise",
+            "settings": {
+                "root_dir": data_root_dir
+            }
+        },
+        "ProbeStrategy": {
+            "class": "probestrategy.fixed_probe_level.FixedProbeLevel",
+            "settings": {
+                "initial_probe_level": -3,
+                "max_num_trials": 2
+            }
         }
-        }
-
-    runExperiment(config)
+    }
+    run_block(block_config)

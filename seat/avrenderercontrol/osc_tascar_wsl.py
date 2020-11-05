@@ -6,6 +6,7 @@ import pandas as pd
 import pprint
 import ipaddress
 import os
+import errno
 from pythonosc import udp_client
 import time
 import subprocess
@@ -26,6 +27,12 @@ def _is_valid_ipaddress(address_to_test):
         return False
 
 
+def check_path_is_file(pathlib_path):
+    if not pathlib_path.is_file():
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), str(pathlib_path))
+
+
 class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
     """
     Base class to implement core functionality of co-ordinating the unity-based
@@ -44,6 +51,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
     # implement conext manager magic
     def __exit__(self, exc_type, exc_value, traceback):
         self.close_osc()
+        self.stop_scene()
 
     def setup_osc(self):
         # get the tascar ip address
@@ -107,16 +115,70 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         Basic implementation - subclasses may need to override
         """
         if self.state == avrc.AVRCState.READY_TO_START:
+            # get the path as seen in wsl
+            print(str(self.tascar_scn_file))
+            # wsl_path = subprocess.run(["wsl.exe","${wslpath '" + str(self.tascar_scn_file) + "'}"],
+            #                           capture_output=True, text=True)
+            #
+            # print(wsl_path)
             # launch tascar
-            subprocess.run([
-                "wsl.exe",
-                "-u root bash -c "
-                "\"tascar_cli demo_data/tascar_scenes/00_binaural_demo.tsc\""
-                ])
+            # subprocess.run([
+            #     "wsl.exe",
+            #     "-u root bash -c "
+            #     + "\""
+            #     + "tascar_cli $(wslpath '"
+            #     + str(self.tascar_scn_file)
+            #     + "')\""
+            #     ])
+            # subprocess.run([
+            #     "wsl.exe",
+            #     "-u root bash -c \"/usr/bin/tascar_cli /mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc\""
+            #     ])
+
+            # subprocess.run('wsl ls', shell=True)  # works
+            wsl_command = 'wsl -u root bash -c \"/usr/bin/tascar_cli /mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc\"'
+            print(wsl_command)
+
+            # blocks
+            # subprocess.run(wsl_command)
+
+            # still blocks
+            # with subprocess.Popen(wsl_command) as tascar_process:
+
+            # works
+            # self.tascar_process = subprocess.Popen(
+            #     wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+            wsl_command = 'wsl ' \
+                + '-u root bash -c \"/usr/bin/tascar_cli ' \
+                + '/mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc' \
+                + '\"'
+            print(wsl_command)
+
+            wsl_command = 'wsl ' \
+                + '-u root bash -c \"/usr/bin/tascar_cli ' \
+                + '$(wslpath ' + str(self.tascar_scn_file) + ')' \
+                + '\"'
+            print(wsl_command)
+
+            wsl_command = 'wsl ' \
+                + '-u root bash -c \"/usr/bin/tascar_cli ' \
+                + str(self.tascar_scn_file) \
+                + '\"'
+            print(wsl_command)
+
+
+            self.tascar_process = subprocess.run(
+                wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+            TODO: check that the process started ok, fix the path conversion
+
+            # give tascar a chance to start
+            time.sleep(1)
 
             # one shot for the background
             self.video_client.send_message(
-                "/video/play", [0, self.skybox_absolute_path])
+                "/video/play", [0, str(self.skybox_absolute_path)])
             self.tascar_client.send_message("/transport/locate", [0.0])
             self.tascar_client.send_message("/transport/start", [])
             self.nextStimulusIndex = 0
@@ -126,48 +188,50 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             # falling over?
             raise RuntimeError("Cannot start scene before it has been setup")
 
+    def stop_scene(self):
+        # print('Entering stop_scene')
+        # print(self.state)
+        # print(avrc.AVRCState.ACTIVE)
+        if self.state is avrc.AVRCState.ACTIVE:
+
+            # print(self.tascar_process.poll())
+            if self.tascar_process.poll() is None:
+                # print('Calling terminate')
+                self.tascar_process.terminate()
+                self.state = avrc.AVRCState.TERMINATED
+
 
 class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
     """
     Demo to show probe level control without requiring speech files
     """
 
-    # Override constructor to get the right config settings
-    def __init__(self):
-        # get the IP addresses
+    # Override constructor to allow settings to be passed in
+    def __init__(self, config):
         app_name = 'TargetToneInNoise'
         self.moduleConfig = confuse.Configuration(app_name, __name__)
+        self.state = avrc.AVRCState.INIT
+
+        # carry on and do the congiguration
+        if config is not None:
+            self.load_config(config)
 
     def load_config(self, config):
         # grab the bits we need
-        # - blocks are presented in order
-        block_config = config["blocks"][
-            config["state_control"]["current_block_index"].get(int)
-            ]
-        pprint.pprint(block_config.get)
+        self.data_root_dir = config["root_dir"]
+        self.tascar_scn_file = pathlib.Path(self.data_root_dir,
+                                            'tascar_scene.tsc')
+        check_path_is_file(self.tascar_scn_file)
 
-        # - pandas dataframe from list of dicts makes it easy to find the right
-        #   listening condition
-        pprint.pprint(config["listening_conditions"].get())
-        df = pd.DataFrame(config["listening_conditions"].get())
-        matching_index = df[
-            df["id"] == block_config["listening_condition_id"].get(str)
-            ].index.values
-        num_of_matches = len(matching_index)
-        assert num_of_matches == 1, \
-            "expected one match but got {}".format(num_of_matches)
-        lc_config = config["listening_conditions"][matching_index[0]]
-        pprint.pprint(lc_config.get)
+        self.skybox_absolute_path = pathlib.Path(self.data_root_dir,
+                                                 'skybox.mp4')
+        check_path_is_file(self.skybox_absolute_path)
 
-        # get the fully qualified path to the skybox video in stages
-        skybox_dir = self.skybox = pathlib.Path(
-            config["paths"]["unity_data"]["root_dir"].get(str),
-            config["paths"]["unity_data"]["skybox_rel_dir"].get(str)
-            )
-        skybox_filename = lc_config["avrenderer"]["skybox_file"].get(str)
-        self.skybox_absolute_path = pathlib.Path(skybox_dir, skybox_filename)
-
+        # if we get to here we assume the configuration was successful
         self.state = avrc.AVRCState.CONFIGURED
+
+        # carry on do the setup
+        self.setup()
 
     def setup(self):
         """Inherited public interface for setup"""
@@ -180,7 +244,7 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
                 print('Perhaps configuration had errors...reload config')
                 self.state = avrc.AVRCState.INIT
             else:
-                avrc.AVRCState.READY_TO_START
+                self.state = avrc.AVRCState.READY_TO_START
         else:
             raise RuntimeError('Cannot call setup() before it has been '
                                'configured')
@@ -190,6 +254,6 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def present_next_trial(self):
         # unmute target
-        self.tascar_client.send_message(["/main/target/mute", [0]])
-        time.sleep(1.0)
-        self.tascar_client.send_message(["/main/target/mute", [1]])
+        self.tascar_client.send_message("/main/target/mute", [0])
+        time.sleep(0.5)
+        self.tascar_client.send_message("/main/target/mute", [1])

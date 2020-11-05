@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<session name="tone_in_noise" attribution="Alastair H Moore" loop="true" duration="4" playonload="true">
+	<scene name="main" guiscale="8">
+		<!-- target is muted at load time and will be unmuted by control software -->
+		<source name="target" mute="true">
+			<position >0	1.8  0  0</position>
+			<sound><plugins>
+					<sine f="440" a="60"/>
+			</plugins></sound>
+		</source>
+		<source name="masker">
+			<position >	0	0  1.8  0</position>
+			<sound><plugins>
+					<pink level="55" fmax="16000"/>
+			</plugins></sound>
+		</source>
+		<receiver name="out" type="hrtf">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+
+	<modules>
+	</modules>
+
+<connect src="render.main:out_l" dest="JackTrip:send_1" />
+<connect src="render.main:out_r" dest="JackTrip:send_2" />
+</session>

@@ -7,24 +7,24 @@ class FixedProbeLevel(ProbeStrategy):
     The probe level does not change. Stopping criterion is the predetermined
     number of trials.
     """
-    def __init__(self, level, numTrials):
-        self.level = level
-        self.numTrials = numTrials
+    def __init__(self, config):
+        self.level = config["initial_probe_level"]
+        self.numTrials = config["max_num_trials"]
         self.storedResults = []
         self.finished = False
 
-    def storeTrialResult(self, result):
+    def store_trial_result(self, result):
         # print(result)
         self.storedResults.append(result)
         # print(self.storedResults)
-        if ( len(self.storedResults) >= self.numTrials ):
+        if (len(self.storedResults) >= self.numTrials):
             self.finished = True
 
-    def getNextProbeLevel(self):
+    def get_next_probe_level(self):
         return self.level
 
-    def getCurrentEstimate(self):
+    def get_current_estimate(self):
         return np.mean(np.array(self.storedResults))
 
-    def isFinished(self):
+    def is_finished(self):
         return self.finished
