@@ -33,6 +33,23 @@ def check_path_is_file(pathlib_path):
             errno.ENOENT, os.strerror(errno.ENOENT), str(pathlib_path))
 
 
+def convert_windows_path_to_wsl(pathlib_win_path):
+    wsl_command = ("wsl bash -c \"wslpath '"
+                   + str(pathlib_win_path)
+                   + "'\"")
+    try:
+        result = subprocess.run(wsl_command,
+                                capture_output=True,
+                                check=True,
+                                text=True)
+        return result.stdout.rstrip()
+
+    except subprocess.CalledProcessError as error:
+        print('Path conversion using wslpath failed')
+        print(wsl_command)
+        raise error
+
+
 class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
     """
     Base class to implement core functionality of co-ordinating the unity-based
@@ -115,63 +132,17 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         Basic implementation - subclasses may need to override
         """
         if self.state == avrc.AVRCState.READY_TO_START:
-            # get the path as seen in wsl
-            print(str(self.tascar_scn_file))
-            # wsl_path = subprocess.run(["wsl.exe","${wslpath '" + str(self.tascar_scn_file) + "'}"],
-            #                           capture_output=True, text=True)
-            #
-            # print(wsl_path)
-            # launch tascar
-            # subprocess.run([
-            #     "wsl.exe",
-            #     "-u root bash -c "
-            #     + "\""
-            #     + "tascar_cli $(wslpath '"
-            #     + str(self.tascar_scn_file)
-            #     + "')\""
-            #     ])
-            # subprocess.run([
-            #     "wsl.exe",
-            #     "-u root bash -c \"/usr/bin/tascar_cli /mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc\""
-            #     ])
-
-            # subprocess.run('wsl ls', shell=True)  # works
-            wsl_command = 'wsl -u root bash -c \"/usr/bin/tascar_cli /mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc\"'
-            print(wsl_command)
-
-            # blocks
-            # subprocess.run(wsl_command)
-
-            # still blocks
-            # with subprocess.Popen(wsl_command) as tascar_process:
-
-            # works
-            # self.tascar_process = subprocess.Popen(
-            #     wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
             wsl_command = 'wsl ' \
                 + '-u root bash -c \"/usr/bin/tascar_cli ' \
-                + '/mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/01_TargetToneInNoise/tascar_scene.tsc' \
+                + str(self.tascar_scn_file_wsl_path) \
                 + '\"'
-            print(wsl_command)
-
-            wsl_command = 'wsl ' \
-                + '-u root bash -c \"/usr/bin/tascar_cli ' \
-                + '$(wslpath ' + str(self.tascar_scn_file) + ')' \
-                + '\"'
-            print(wsl_command)
-
-            wsl_command = 'wsl ' \
-                + '-u root bash -c \"/usr/bin/tascar_cli ' \
-                + str(self.tascar_scn_file) \
-                + '\"'
-            print(wsl_command)
-
-
-            self.tascar_process = subprocess.run(
+            # print(wsl_command)
+            self.tascar_process = subprocess.Popen(
                 wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-            TODO: check that the process started ok, fix the path conversion
+            #
+            # TODO: check that the process started ok
 
             # give tascar a chance to start
             time.sleep(1)
@@ -222,6 +193,9 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
         self.tascar_scn_file = pathlib.Path(self.data_root_dir,
                                             'tascar_scene.tsc')
         check_path_is_file(self.tascar_scn_file)
+        self.tascar_scn_file_wsl_path = convert_windows_path_to_wsl(
+            self.tascar_scn_file
+        )
 
         self.skybox_absolute_path = pathlib.Path(self.data_root_dir,
                                                  'skybox.mp4')
