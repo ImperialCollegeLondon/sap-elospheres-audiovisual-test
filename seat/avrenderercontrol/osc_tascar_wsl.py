@@ -3,6 +3,7 @@ import avrenderercontrol.av_renderer_control as avrc
 import confuse
 import pathlib
 import pandas as pd
+import numpy as np
 import pprint
 import ipaddress
 import os
@@ -67,8 +68,8 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
 
     # implement conext manager magic
     def __exit__(self, exc_type, exc_value, traceback):
-        self.close_osc()
         self.stop_scene()
+        self.close_osc()
 
     def setup_osc(self):
         # get the tascar ip address
@@ -80,6 +81,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             env_variable_name = self.moduleConfig['tascar']['ipenvvariable'] \
                 .get(str)
             filename = os.environ.get(env_variable_name)
+            print('Reading tascar IP address from ' + filename)
             with open(filename, "r") as myfile:
                 tascar_ipaddress = myfile.readline().strip()
             print('env {}: {}'.format(env_variable_name, tascar_ipaddress))
@@ -158,18 +160,39 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.tascar_process = subprocess.Popen(
                 wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-            #
-            # TODO: check that the process started ok
-
             # give tascar a chance to start
             time.sleep(1)
+
+            if self.tascar_process.poll() is not None:
+                print('Process didn''t start right')
+                print(self.tascar_process)
+
+            # check that the process started ok and keep reference to pid
+            wsl_command = 'wsl -u root bash -c \"' \
+                + 'pidof tascar_cli' \
+                + '\"'
+            try:
+                result = subprocess.run(wsl_command,
+                                        capture_output=True,
+                                        check=True,
+                                        text=True)
+                self.tascar_pid_as_str = result.stdout.rstrip()
+                print('tascar_cli running with pid: ' + self.tascar_pid_as_str)
+
+            except subprocess.CalledProcessError as error:
+                print('tascar_cli didn''t start')
+                print(wsl_command)
+                print(result)
+                raise error
+            # result = subprocess.check_output(wsl_command)
+            # print(result)
 
             # one shot for the background
             self.video_client.send_message(
                 "/video/play", [0, str(self.skybox_absolute_path)])
             self.tascar_client.send_message("/transport/locate", [0.0])
             self.tascar_client.send_message("/transport/start", [])
-            self.nextStimulusIndex = 0
+            self.next_stimulus_index = 0
             self.state = avrc.AVRCState.ACTIVE
         else:
             # TODO: Can we automate progressing through states rather than just
@@ -182,7 +205,36 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         # print(avrc.AVRCState.ACTIVE)
         if self.state is avrc.AVRCState.ACTIVE:
 
-            # print(self.tascar_process.poll())
+            # self.tascar_client.send_message("/transport/stop", [])
+            # time.sleep(0.2)
+            # self.tascar_client.send_message("/transport/unload", [])
+            # time.sleep(0.2)
+            #
+            # # make sure the samplers exit gracefully
+            # self.sampler_client1.send_message(
+            #     "/" + self.masker1_source_name + "/quit", [])
+            # # delattr(self, 'sampler_client1')
+            # self.sampler_client2.send_message(
+            #     "/" + self.target_source_name + "/quit", [])
+            # # delattr(self, 'sampler_client2')
+            # self.sampler_client3.send_message(
+            #     "/" + self.masker2_source_name + "/quit", [])
+            # # delattr(self, 'sampler_client3')
+
+            # end tascar_cli process directly - more graceful than terminating
+            # the process in windows land
+            wsl_command = 'wsl ' \
+                + '-u root bash -c \"kill ' \
+                + self.tascar_pid_as_str \
+                + '\"'
+            # print(wsl_command)
+            subprocess.run(wsl_command)
+            # print("sent kill signal waiting...")
+            # for count_down in [5, 4, 3, 2, 1]:
+            #     print(str(count_down))
+            #     time.sleep(1)
+            # # print(self.tascar_process.poll())
+            # print(self.tascar_process)
             if self.tascar_process.poll() is None:
                 # print('Calling terminate')
                 self.tascar_process.terminate()
@@ -248,3 +300,124 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
         self.tascar_client.send_message("/main/target/mute", [0])
         time.sleep(0.5)
         self.tascar_client.send_message("/main/target/mute", [1])
+
+
+class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
+    """
+    Demo to show speech probe with point source maskers - all materials
+    provided as files which are listed in txt files. Txt files have relative
+    paths hard coded into the tascar_scene.tsc file but the location of the
+    paths to the data files are absolute so can be anywhere.
+    """
+
+    # Override constructor to allow settings to be passed in
+    def __init__(self, config):
+        app_name = 'TargetSpeechTwoMaskers'
+        self.moduleConfig = confuse.Configuration(app_name, __name__)
+        self.state = avrc.AVRCState.INIT
+
+        # carry on and do the congiguration
+        if config is not None:
+            self.load_config(config)
+
+    def load_config(self, config):
+        # grab the bits we need
+        self.data_root_dir = config["root_dir"]
+
+        # tascar scene
+        self.tascar_scn_file = pathlib.Path(self.data_root_dir,
+                                            'tascar_scene.tsc')
+        check_path_is_file(self.tascar_scn_file)
+        self.tascar_scn_file_wsl_path = convert_windows_path_to_wsl(
+            self.tascar_scn_file)
+
+        # skybox
+        self.skybox_absolute_path = pathlib.Path(self.data_root_dir,
+                                                 'skybox.mp4')
+        check_path_is_file(self.skybox_absolute_path)
+
+        # delay between maskers and target
+        self.pre_target_delay = config["pre_target_delay"]
+        # TODO: validate
+
+        # read in and validate video list
+        self.present_target_video = config["present_target_video"]
+
+        # get the masker directions
+
+        # if we get to here we assume the configuration was successful
+        self.state = avrc.AVRCState.CONFIGURED
+
+        # carry on do the setup
+        self.setup()
+
+    def setup(self):
+        """Inherited public interface for setup"""
+        print('Entered setup()')
+        if self.state == avrc.AVRCState.CONFIGURED:
+            try:
+                self.setup_osc()
+            except Exception as err:
+                print('Encountered error in setup_osc():')
+                print(err)
+                print('Perhaps configuration had errors...reload config')
+                self.state = avrc.AVRCState.INIT
+
+            # continue with setup
+            self.target_source_name = 'source2'
+            self.masker1_source_name = 'source1'
+            self.masker2_source_name = 'source3'
+            self.target_linear_gain = 1.0
+            self.masker_linear_gain = 1.0
+
+            # TODO: set the positions of the maskers
+
+            # save state
+            self.state = avrc.AVRCState.READY_TO_START
+        else:
+            raise RuntimeError('Cannot call setup() before it has been '
+                               'configured')
+
+    def set_probe_level(self, probe_level):
+        """Probe level is SNR in dB
+
+        This is interpreted as the relative gain to be applied to the target
+        """
+        self.target_linear_gain = np.power(10.0, (probe_level/20.0))
+
+    def present_next_trial(self):
+        print('Entered present_next_trial() with stimulus: '
+              + str(self.next_stimulus_index))
+
+        # start maskers
+        msg_address = ("/" + self.masker1_source_name
+                       + "/" + str(self.next_stimulus_index+1)
+                       + "/add")
+        msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
+        print(msg_address)
+        self.sampler_client1.send_message(msg_address, msg_contents)
+
+        msg_address = ("/" + self.masker2_source_name
+                       + "/" + str(self.next_stimulus_index+1)
+                       + "/add")
+        msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
+        print(msg_address)
+        self.sampler_client3.send_message(msg_address, msg_contents)
+
+        # pause
+        time.sleep(self.pre_target_delay)
+
+        # start target
+        if self.present_target_video:
+            # self.video_client.send_message()
+            pass
+
+        msg_address = ("/" + self.target_source_name
+                       + "/" + str(self.next_stimulus_index+1)
+                       + "/add")
+        msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
+        print(msg_address + str(msg_contents))
+        self.sampler_client2.send_message(msg_address, msg_contents)
+
+        # finally increment counter
+        self.next_stimulus_index += 1
