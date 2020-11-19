@@ -11,6 +11,7 @@ import errno
 from pythonosc import udp_client
 import time
 import subprocess
+import sys
 
 # helper functions
 # leading underscore avoids being imported
@@ -161,13 +162,27 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
                 wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
             # give tascar a chance to start
-            time.sleep(1)
+            time.sleep(0.3)
 
+            # check process is running
             if self.tascar_process.poll() is not None:
-                print('Process didn''t start right')
-                print(self.tascar_process)
+                # oh dear, it's not running!
+                # try again with settings which will allow us to debug
+                self.tascar_process = subprocess.Popen(
+                    wsl_command, creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                    text=True)
+                outs, errs = self.tascar_process.communicate()
+                print('stdout:')
+                if outs is not None:
+                    print(outs)
+                    # for line in outs:
+                    #     print(line)
+                print('stderr:')
+                if errs is not None:
+                    print(errs)
 
-            # check that the process started ok and keep reference to pid
+            # get the process pid in wsl land
             wsl_command = 'wsl -u root bash -c \"' \
                 + 'pidof tascar_cli' \
                 + '\"'
@@ -179,13 +194,11 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
                 self.tascar_pid_as_str = result.stdout.rstrip()
                 print('tascar_cli running with pid: ' + self.tascar_pid_as_str)
 
-            except subprocess.CalledProcessError as error:
-                print('tascar_cli didn''t start')
-                print(wsl_command)
-                print(result)
-                raise error
-            # result = subprocess.check_output(wsl_command)
-            # print(result)
+            except subprocess.CalledProcessError:
+                # we got an error, which means we couldn't get the pid
+                # nothing to be done but exit gracefully
+                print('couldn''t get pid of tascar_cli')
+                sys.exit("probably tascar_cli failed to start")
 
             # one shot for the background
             self.video_client.send_message(
@@ -200,45 +213,20 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             raise RuntimeError("Cannot start scene before it has been setup")
 
     def stop_scene(self):
-        # print('Entering stop_scene')
-        # print(self.state)
-        # print(avrc.AVRCState.ACTIVE)
         if self.state is avrc.AVRCState.ACTIVE:
-
-            # self.tascar_client.send_message("/transport/stop", [])
-            # time.sleep(0.2)
-            # self.tascar_client.send_message("/transport/unload", [])
-            # time.sleep(0.2)
-            #
-            # # make sure the samplers exit gracefully
-            # self.sampler_client1.send_message(
-            #     "/" + self.masker1_source_name + "/quit", [])
-            # # delattr(self, 'sampler_client1')
-            # self.sampler_client2.send_message(
-            #     "/" + self.target_source_name + "/quit", [])
-            # # delattr(self, 'sampler_client2')
-            # self.sampler_client3.send_message(
-            #     "/" + self.masker2_source_name + "/quit", [])
-            # # delattr(self, 'sampler_client3')
-
-            # end tascar_cli process directly - more graceful than terminating
-            # the process in windows land
+            # end tascar_cli process directly using linux kill
+            # this avoids audio glitches
             wsl_command = 'wsl ' \
                 + '-u root bash -c \"kill ' \
                 + self.tascar_pid_as_str \
                 + '\"'
             # print(wsl_command)
             subprocess.run(wsl_command)
-            # print("sent kill signal waiting...")
-            # for count_down in [5, 4, 3, 2, 1]:
-            #     print(str(count_down))
-            #     time.sleep(1)
-            # # print(self.tascar_process.poll())
-            # print(self.tascar_process)
+
+            # make sure it really has finished
             if self.tascar_process.poll() is None:
-                # print('Calling terminate')
                 self.tascar_process.terminate()
-                self.state = avrc.AVRCState.TERMINATED
+            self.state = avrc.AVRCState.TERMINATED
 
 
 class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
