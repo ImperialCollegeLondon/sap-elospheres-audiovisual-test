@@ -8,7 +8,9 @@ tascar:
   ipaddress: ''
   oscport: 9877
 sampler:
-  ipaddress: '239.255.1.7' # multicast
+  # ipaddress: '239.255.1.7' # multicast
+  ipaddress: '' # multicast
+  ipenvvariable: 'JTC_REMOTE_IP_SETTING'
   source1:
     oscport: 9001
     name: source1

@@ -90,6 +90,23 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             # store it in config in case we need it again
             self.moduleConfig['tascar']['ipaddress'] = tascar_ipaddress
 
+        sampler_ipaddress = self.moduleConfig['sampler']['ipaddress'].get(str)
+        print('config tascar.ipaddress:' + sampler_ipaddress)
+        if not _is_valid_ipaddress(sampler_ipaddress):
+            env_variable_name = self.moduleConfig['tascar']['ipenvvariable'] \
+                .get(str)
+            filename = os.environ.get(env_variable_name)
+            print('Reading tascar IP address from ' + filename)
+            with open(filename, "r") as myfile:
+                sampler_ipaddress = myfile.readline().strip()
+            print('env {}: {}'.format(env_variable_name, sampler_ipaddress))
+            if not _is_valid_ipaddress(sampler_ipaddress):
+                # failed to get a valid ipaddress
+                print(sampler_ipaddress)
+                raise ValueError
+            # store it in config in case we need it again
+            self.moduleConfig['sampler']['ipaddress'] = sampler_ipaddress
+
         # TODO: check validity of all ip addresses
         # open the OSC comms
         self.video_client = udp_client.SimpleUDPClient(
