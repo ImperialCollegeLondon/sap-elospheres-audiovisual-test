@@ -8,6 +8,10 @@ module_path = Path(__file__).parent.absolute()
 START_LOCAL_SCRIPT = Path(module_path, "start_local.ps1")
 START_REMOTE_SCRIPT = Path(module_path, "start_wsl.ps1")
 TEST_REMOTE_METRONOME_SCRIPT = Path(module_path, "test_metronome.ps1")
+CONNECT_SOUNDCARD_SCRIPT = Path(module_path,
+                                "connect_jacktrip_receive_to_soundcard.ps1")
+DISCONNECT_SOUNDCARD_SCRIPT = Path(module_path,
+                                   "disconnect_jacktrip_receive_from_soundcard.ps1")
 
 
 class JackTripControl:
@@ -33,6 +37,17 @@ class JackTripControl:
         if self.isRunning:
             pass  # TODO kill the processes
 
+    def connect(self):
+        if self.isRunning:
+            subprocess.run(["powershell.exe", CONNECT_SOUNDCARD_SCRIPT],
+                           check=True)
+        else:
+            print("need to start before connecting")
+
+    def disconnect(self):
+        subprocess.run(["powershell.exe", DISCONNECT_SOUNDCARD_SCRIPT],
+                       check=True)
+
     def testMetronomeManual(self):
         subprocess.run(["powershell.exe", TEST_REMOTE_METRONOME_SCRIPT],
                        check=True)
@@ -41,3 +56,10 @@ class JackTripControl:
 if __name__ == '__main__':
     jtc = JackTripControl()
     jtc.start()
+
+    print('Starting jack servers on remote and local machines...')
+    print('Wait until consoles indicate that JackTrip connection has been established')
+    print('This may take several seconds...')
+    input("Press Enter to continue with connecting JackTrip to the local soundcard...")
+
+    jtc.connect()
