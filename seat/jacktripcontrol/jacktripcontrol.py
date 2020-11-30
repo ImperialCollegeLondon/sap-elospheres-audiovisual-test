@@ -48,7 +48,7 @@ class JackTripControl:
         subprocess.run(["powershell.exe", DISCONNECT_SOUNDCARD_SCRIPT],
                        check=True)
 
-    def testMetronomeManual(self):
+    def test_metronome_manual(self):
         subprocess.run(["powershell.exe", TEST_REMOTE_METRONOME_SCRIPT],
                        check=True)
 
@@ -56,10 +56,3 @@ class JackTripControl:
 if __name__ == '__main__':
     jtc = JackTripControl()
     jtc.start()
-
-    print('Starting jack servers on remote and local machines...')
-    print('Wait until consoles indicate that JackTrip connection has been established')
-    print('This may take several seconds...')
-    input("Press Enter to continue with connecting JackTrip to the local soundcard...")
-
-    jtc.connect()

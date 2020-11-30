@@ -1,3 +1,6 @@
+# Project specific
+local_unversioned_tmp_files
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

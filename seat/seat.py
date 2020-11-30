@@ -52,6 +52,15 @@ def instance_builder(config):
 
 
 def run_block(config):
+    """Main function for executing a test
+    TODO:
+    The number of trials is limited by the lowest of
+    - config: can directly impose a maximum
+    - probe_strategy: convergence achieved or fixed number of trials specified
+    - materials: if pre generated materials are used (avrenderer or
+                 responsemode?)
+
+    """
 
     # settings
     pre_trial_delay = (0.1, 0.2)

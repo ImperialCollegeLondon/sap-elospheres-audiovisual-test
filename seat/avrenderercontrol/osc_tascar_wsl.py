@@ -2,9 +2,7 @@
 import avrenderercontrol.av_renderer_control as avrc
 import confuse
 import pathlib
-import pandas as pd
 import numpy as np
-import pprint
 import ipaddress
 import os
 import errno
@@ -330,6 +328,17 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
         # read in and validate video list
         self.present_target_video = config["present_target_video"]
+        if self.present_target_video:
+            self.target_video_paths = []
+            with open(pathlib.Path(self.data_root_dir,
+                                   config["target_video_list_file"]), 'r') as f:
+                for line in f:
+                    video_path = pathlib.Path(line.rstrip())
+                    check_path_is_file(video_path)
+                    self.target_video_paths.append(video_path)
+
+
+
 
         # get the masker directions
 
@@ -396,13 +405,16 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         time.sleep(self.pre_target_delay)
 
         # start target
+        # - video first
         if self.present_target_video:
-            # self.video_client.send_message()
-            pass
+            self.video_client.send_message("/video/play",
+                [2, str(self.target_video_paths[self.next_stimulus_index])])
 
         msg_address = ("/" + self.target_source_name
                        + "/" + str(self.next_stimulus_index+1)
                        + "/add")
+        # - audio after a short pause to get lip sync right
+        time.sleep(0.15)
         msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
         print(msg_address + str(msg_contents))
         self.sampler_client2.send_message(msg_address, msg_contents)

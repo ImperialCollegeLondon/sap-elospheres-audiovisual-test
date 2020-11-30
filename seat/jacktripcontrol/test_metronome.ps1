@@ -19,7 +19,7 @@ wsl -u root bash -c "sleep 0.1; jack_lsp; jack_connect metro:100_bpm JackTrip:se
 & 'C:/Program Files (x86)/Jack/jack_connect.exe' ($client_ip + ':receive_1') system:playback_1
 
 # user check
-$dummy = Read-Host -Prompt 'Verify that you can hear the audio.../nPress return to end'
+$dummy = Read-Host -Prompt 'Verify that you can hear the audio... Press return to end'
 
 # disconnect and end the metronome process
 & 'C:/Program Files (x86)/Jack/jack_disconnect.exe' ($client_ip + ':receive_1') system:playback_1

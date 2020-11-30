@@ -3,14 +3,18 @@ import pathlib
 
 if __name__ == '__main__':
     this_directory = pathlib.Path(__file__).parent.absolute()
-    data_root_dir = pathlib.Path("demo_data", "02_TargetSpeechTwoMaskers")
+    parent_directory = this_directory.parent
+    data_root_dir = pathlib.Path(
+        parent_directory, "demo_data", "02_TargetSpeechTwoMaskers")
+    # target_video_list_file = pathlib.Path(data_root_dir, "target_video.txt")
     block_config = {
         "AVRendererControl": {
             "class": "avrenderercontrol.osc_tascar_wsl.TargetSpeechTwoMaskers",
             "settings": {
                 "root_dir": data_root_dir,
                 "pre_target_delay": 1.5,
-                "present_target_video": False
+                "present_target_video": True,
+                "target_video_list_file": "target_video.txt"
             }
         },
         "ProbeStrategy": {
@@ -19,6 +23,13 @@ if __name__ == '__main__':
                 "initial_probe_level": -3,
                 "max_num_trials": 3
             }
+        # },
+        # "ResponseMode": {
+        #     "class": "responsemode.speech_inteligibility.correctly_identified_words",
+        #     "settings": {
+        #         "root_dir": data_root_dir,
+        #         "keyword_file": "keywords.txt"
+        #     }
         }
     }
     seat.run_block(block_config)

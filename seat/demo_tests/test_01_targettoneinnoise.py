@@ -3,7 +3,9 @@ import pathlib
 
 if __name__ == '__main__':
     this_directory = pathlib.Path(__file__).parent.absolute()
-    data_root_dir = pathlib.Path("demo_data", "01_TargetToneInNoise")
+    parent_directory = this_directory.parent
+    data_root_dir = pathlib.Path(
+        parent_directory, "demo_data", "01_TargetToneInNoise")
     block_config = {
         "AVRendererControl": {
             "class": "avrenderercontrol.osc_tascar_wsl.TargetToneInNoise",
