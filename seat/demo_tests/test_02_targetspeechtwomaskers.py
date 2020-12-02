@@ -23,13 +23,13 @@ if __name__ == '__main__':
                 "initial_probe_level": -3,
                 "max_num_trials": 3
             }
-        # },
-        # "ResponseMode": {
-        #     "class": "responsemode.speech_inteligibility.correctly_identified_words",
-        #     "settings": {
-        #         "root_dir": data_root_dir,
-        #         "keyword_file": "keywords.txt"
-        #     }
+        },
+        "ResponseMode": {
+            "class": "responsemode.speech_intelligibility.ExperimenterSelectsCorrectKeywords",
+            "settings": {
+                "root_dir": data_root_dir,
+                "keyword_file": "keywords.txt"
+            }
         }
     }
     seat.run_block(block_config)

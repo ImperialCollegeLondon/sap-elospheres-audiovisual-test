@@ -67,8 +67,8 @@ class AVRendererControl(ABC):
         pass
 
     @abstractmethod
-    def present_next_trial(self):
-        """Trigger the next trial (or test interval) in the current block"""
+    def present_trial(self, stimulus_id):
+        """Trigger trial using stimulus given by stimulus_id (0-based)"""
         pass
 
 

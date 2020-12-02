@@ -71,19 +71,10 @@ def run_block(config):
         # ProbeStrategy
         probe_strategy = instance_builder(config["ProbeStrategy"])
 
-        # TODO: validate that the probe strategy is compatable with the avrenderer
+        # TODO: ensure probe strategy is compatable with the avrenderer
 
-        # setup the gui
-        ps_key = '-ProbeDetails-'
-        materials_key = '-Materials-'
-        response_key = '-Response-'
-        layout = [[sg.Text('Probe level:'), sg.Text(size=(15, 1), key=ps_key)],
-                  [sg.Text('Keywords:'), sg.Text(size=(80, 1), key=materials_key)],
-                  [sg.Input(key=response_key, focus=True)],
-                  [sg.Button('Next')]]
-
-        window = sg.Window('SAP ELO-SPHERES AV Test', layout,
-                           finalize=True, use_default_focus=False)
+        # ResponseMode
+        response_mode = instance_builder(config["ResponseMode"])
 
         # start test
         #    - play background video
@@ -91,75 +82,46 @@ def run_block(config):
         avrenderer.start_scene()
 
         # wait for experimenter
-        while True:
-            window[response_key].update(
-                'Press Next when ready to proceed with test')
-            event, values = window.read()
-            print(event, values)
-            if event == sg.WIN_CLOSED:
-                window.close()
-                return
-            if event == 'Next':
-                break
+        input('Scene has started. Press Enter to start first trial...')
 
         # main loop
         while not probe_strategy.is_finished():
 
-            # doTrial
-            # - getProbeLevel
+            # Get required parameters
+            stimulus_id = probe_strategy.get_next_stimulus_id()
             probe_level = probe_strategy.get_next_probe_level()
 
-            thisTrialMaterial = random.sample(
-                ['Boy', 'Girl', 'Dog', 'Cat', 'Plane', 'Car', 'Sun', 'Moon'], k=5)
+            # console feedback
+            print('Presenting trial...')
+            print('stimulus_id: ' + str(stimulus_id))
+            print('probe_level:' + probe_strategy.get_next_probe_level_as_string())
 
-            # - showExperimenterUI
-            window[ps_key].update(str(probe_level))
-            window[materials_key].update(str(thisTrialMaterial))
-            window[response_key].update('')
-
-            # - prepareTrial
-            #     e.g. send OSC commands to set levels of source(s)
+            # Prepare the renderer (behaviour depends on  implementation)
             avrenderer.set_probe_level(probe_level)
 
-            # - pause
+            # Show the response display UI
+            response_mode.show_prompt(stimulus_id)
+
+            # Pause
             # (random duration between preTrialDelay[0] and preTrialDelay[1])
             time.sleep(pre_trial_delay[0]
-                       + (pre_trial_delay[1]-pre_trial_delay[0]) * random.random())
+                       + ((pre_trial_delay[1]-pre_trial_delay[0])
+                          * random.random()))
 
-            # - [present stimulus/mixture]
+            # Present the stimulus//mixture
             # e.g. send OSC commands to start videos/samplers
-            avrenderer.present_next_trial()
+            avrenderer.present_trial(stimulus_id)
 
-            # - getResponse
-            # e.g. enable experimenter UI controls,
-            #      wait for button press,
-            #      log response
-            # validResponse=False
-            while True:  # validResponse==False:
-                window[response_key].set_focus()
-                event, values = window.read()
-                print(event, values)
-                if event == sg.WIN_CLOSED:
-                    # can't avoid it so just make sure we save the state
-                    print(str(probe_strategy.get_current_estimate()))
-                    window.close()
-                    return
-                if event == 'Next':
-                    # validate response
-                    if isValidResponse(values[response_key]):
-                        # - scoreResponse
-                        # may need some conversion from what UI returns and what
-                        # the actual result is
-                        result = scoreResponse(values[response_key])
+            # Wait for response
+            # - result type depends on the response mode
+            # - ProbeStrategy and ResponseMode must be chosen to be compatible
+            result = response_mode.wait()
 
-                        # - storeTrialResult
-                        probe_strategy.store_trial_result(result)
+            if result is None:
+                # window was closed/cancelled - attempt to end gracefully
+                break
 
-                        break
-
-        # test done so tidy up
-        # - stop background video/sound
-        window.close()
+            probe_strategy.store_trial_result(result)
 
         print(str(probe_strategy.get_current_estimate()))
         return

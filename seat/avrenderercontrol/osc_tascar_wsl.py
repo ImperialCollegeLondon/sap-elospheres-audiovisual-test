@@ -203,7 +203,6 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
                 "/video/play", [0, str(self.skybox_absolute_path)])
             self.tascar_client.send_message("/transport/locate", [0.0])
             self.tascar_client.send_message("/transport/start", [])
-            self.next_stimulus_index = 0
             self.state = avrc.AVRCState.ACTIVE
         else:
             # TODO: Can we automate progressing through states rather than just
@@ -281,7 +280,7 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
     def set_probe_level(self, probe_level):
         pass
 
-    def present_next_trial(self):
+    def present_trial(self, stimulus_id):
         # unmute target
         self.tascar_client.send_message("/main/target/mute", [0])
         time.sleep(0.5)
@@ -382,23 +381,22 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         """
         self.target_linear_gain = np.power(10.0, (probe_level/20.0))
 
-    def present_next_trial(self):
-        print('Entered present_next_trial() with stimulus: '
-              + str(self.next_stimulus_index))
+    def present_trial(self, stimulus_id):
+        # print('Entered present_trial() with stimulus: ' + str(stimulus_id))
 
         # start maskers
         msg_address = ("/" + self.masker1_source_name
-                       + "/" + str(self.next_stimulus_index+1)
+                       + "/" + str(stimulus_id+1)
                        + "/add")
         msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
-        print(msg_address)
+        # print(msg_address)
         self.sampler_client1.send_message(msg_address, msg_contents)
 
         msg_address = ("/" + self.masker2_source_name
-                       + "/" + str(self.next_stimulus_index+1)
+                       + "/" + str(stimulus_id+1)
                        + "/add")
         msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
-        print(msg_address)
+        # print(msg_address)
         self.sampler_client3.send_message(msg_address, msg_contents)
 
         # pause
@@ -407,17 +405,15 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         # start target
         # - video first
         if self.present_target_video:
-            self.video_client.send_message("/video/play",
-                [2, str(self.target_video_paths[self.next_stimulus_index])])
+            # msg_contents = [video player id, video file]
+            msg_contents = [2, str(self.target_video_paths[stimulus_id])]
+            self.video_client.send_message("/video/play", msg_contents)
 
         msg_address = ("/" + self.target_source_name
-                       + "/" + str(self.next_stimulus_index+1)
+                       + "/" + str(stimulus_id+1)
                        + "/add")
         # - audio after a short pause to get lip sync right
         time.sleep(0.15)
         msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
-        print(msg_address + str(msg_contents))
+        # print(msg_address + str(msg_contents))
         self.sampler_client2.send_message(msg_address, msg_contents)
-
-        # finally increment counter
-        self.next_stimulus_index += 1

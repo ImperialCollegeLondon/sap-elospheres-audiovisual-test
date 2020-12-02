@@ -19,6 +19,13 @@ if __name__ == '__main__':
                 "initial_probe_level": -3,
                 "max_num_trials": 2
             }
+        },
+        "ResponseMode": {
+            "class": "responsemode.signal_detection.BinaryChoice",
+            "settings": {
+                # This is a bit of a hack!
+                "signal_present": [True, True]
+            }
         }
     }
     seat.run_block(block_config)
