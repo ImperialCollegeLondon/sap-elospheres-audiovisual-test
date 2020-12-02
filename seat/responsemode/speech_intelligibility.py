@@ -28,15 +28,22 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         self.keywords_df = pandas.read_csv(keywords_file_path, header=None)
         # print(self.keywords_df)
 
+        self.write_to_log = False
+        if "logfile" in config:
+            self.write_to_log = True
+            self.logpath = pathlib.Path(config["logfile"])
+            self.logpath.touch(exist_ok=False)  # do NOT overwrite!
+
     def show_prompt(self, stimulus_id):
         # keywords = ['Word 1', 'Word 2', 'Word 3', 'Word 4', 'Word 5']
         # print(stimulus_id)
-        keywords = self.keywords_df.loc[stimulus_id, :]
-        # print(keywords)
+        self.keywords = self.keywords_df.loc[stimulus_id, :]
+        self.stimulus_id = stimulus_id
+        # print(self.keywords)
         button_row_layout = []
         self.button_keys = []
         self.kw_correct = {}
-        for kw_num, keyword in enumerate(keywords):
+        for kw_num, keyword in enumerate(self.keywords):
             button_key = 'kw_' + str(kw_num)
             button_row_layout += [kw_button(keyword, key=button_key)]
             self.button_keys += [button_key]
@@ -66,6 +73,18 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                 for i in range(len(self.button_keys)):
                     result.append(self.kw_correct[self.button_keys[i]])
                 # print(result)
+
+                if self.write_to_log:
+                    df_to_write = pandas.concat(
+                        [pandas.DataFrame([self.stimulus_id]),
+                         self.keywords,
+                         pandas.DataFrame(result)]
+                        )
+                    df_to_write.T.to_csv(self.logpath,
+                        index=False,
+                        header=False,
+                        mode='a')
+
                 return result
             elif event in self.button_keys:
                 self.kw_correct[event] = not self.kw_correct[event]
