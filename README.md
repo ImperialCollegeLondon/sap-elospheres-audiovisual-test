@@ -7,24 +7,25 @@ Targets Windows platform with Windows Subsystem for Linux already installed.
 ## Installation
 1. Open an anaconda shell
 
-  See https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html for installation instructions.
+    See https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html for installation instructions.
+
 1. Get the code and test data using
-```
-(base) git clone https://github.com/ImperialCollegeLondon/sap-elospheres-audiovisual-test.git C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test
-```
-N.B. For now, the built-in tests have files with hardcoded paths. This is pretty ugly but avoids lots of complexity.
+    ```
+    (base) git clone https://github.com/ImperialCollegeLondon/sap-elospheres-audiovisual-test.git C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test
+    ```
+    N.B. For now, the built-in tests have files with hardcoded paths. This is pretty ugly but avoids lots of complexity.
 
 1. Create a new conda environment
-```
-(base) conda env create -n seat --file seat.yml
-```
-N.B. You can call the environment (-n \<env_name\>) whatever you like but `seat` will be used here.
+    ```
+    (base) conda env create -n seat --file seat.yml
+    ```
+    N.B. You can call the environment (-n \<env_name\>) whatever you like but `seat` will be used here.
 
 1. Activate the new environment and change into the main seat directory
-```
-(base) conda activate seat
-(seat) cd seat
-```
+    ```
+    (base) conda activate seat
+    (seat) cd seat
+    ```
 
 ## Test the installation
 These are just to check that everything installed properly. They are by no means exhaustive.
