@@ -1,43 +1,11 @@
 import probestrategy
 import avrenderercontrol
 
-# import gui
-
 import PySimpleGUI as sg
 import importlib
 import time
 import random
 import numpy as np
-
-
-# def getLayout():
-#     """Defines the overall layout of the GUI and keys for the elements"""
-#     layout = [[sg.Text('Probe level:'), sg.Text(size=(15,1), key=psKey)],
-#               [sg.Input(key='-IN-')],
-#               [sg.Button('Next'), sg.Button('Exit')]]
-
-def scoreResponse(response):
-    """Temporary function in liu of an extensible approach"""
-    # convert a string representing int between 0 and 5 to a fraction
-    return float(response)/5
-
-
-def isValidResponse(response):
-    try:
-        response = float(response)
-    except:
-        print('Not a number')
-        return False
-
-    if (response < 0) or (response > 5):
-        print('Out of range')
-        return False
-
-    if (np.remainder(response, 1) != 0):
-        print('Not an integer')
-        return False
-
-    return True
 
 
 def instance_builder(config):
@@ -71,10 +39,11 @@ def run_block(config):
         # ProbeStrategy
         probe_strategy = instance_builder(config["ProbeStrategy"])
 
-        # TODO: ensure probe strategy is compatable with the avrenderer
-
         # ResponseMode
         response_mode = instance_builder(config["ResponseMode"])
+
+        # TODO: ensure compatibility of probe_strategy, response_mode and
+        #       avrenderer
 
         # start test
         #    - play background video
@@ -94,7 +63,8 @@ def run_block(config):
             # console feedback
             print('Presenting trial...')
             print('stimulus_id: ' + str(stimulus_id))
-            print('probe_level:' + probe_strategy.get_next_probe_level_as_string())
+            print('probe_level:'
+                  + probe_strategy.get_next_probe_level_as_string())
 
             # Prepare the renderer (behaviour depends on  implementation)
             avrenderer.set_probe_level(probe_level)

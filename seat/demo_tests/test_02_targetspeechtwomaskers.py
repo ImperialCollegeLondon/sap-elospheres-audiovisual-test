@@ -12,8 +12,6 @@ if __name__ == '__main__':
                            datetime.now().strftime("%Y%m%d_%H%M%S"))
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-
-    # target_video_list_file = pathlib.Path(data_root_dir, "target_video.txt")
     block_config = {
         "AVRendererControl": {
             "class": "avrenderercontrol.osc_tascar_wsl.TargetSpeechTwoMaskers",
@@ -25,10 +23,11 @@ if __name__ == '__main__':
             }
         },
         "ProbeStrategy": {
-            "class": "probestrategy.fixed_probe_level.FixedProbeLevel",
+            "class": "probestrategy.adaptive_track.TargetTwentyPercent",
             "settings": {
-                "initial_probe_level": -3,
-                "max_num_trials": 3
+                "initial_probe_level": -6,
+                "max_num_trials": 3,
+                "logfile": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
             }
         },
         "ResponseMode": {
