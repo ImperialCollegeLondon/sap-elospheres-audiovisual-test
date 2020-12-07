@@ -1,11 +1,16 @@
 import probestrategy
 import avrenderercontrol
+import util
 
+import sys
 import PySimpleGUI as sg
 import importlib
 import time
 import random
 import numpy as np
+import yaml
+import pathlib
+import argparse
 
 
 def instance_builder(config):
@@ -98,6 +103,31 @@ def run_block(config):
 
 
 if __name__ == '__main__':
-    #  TODO: Implement passing config from command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", help="config file (.yml)")
+    args = parser.parse_args()
 
-    run_block(block_config)
+    if args.file is not None:
+        config_file = args.file
+        print('Config file: ' + config_file)
+    else:
+        # get file
+        config_file = sg.popup_get_file(
+            'Choose the config file',
+            file_types=(('yml', '*.yml'),)
+            )
+
+    # simple validation
+    if config_file is None:
+        sys.exit()
+    else:
+        try:
+            util.check_path_is_file(pathlib.Path(config_file))
+        except FileNotFoundError:
+            print('No config file found at ' + config_file)
+            sys.exit()
+
+    # parse and run
+    with open(config_file, 'r') as f:
+        block_config = yaml.safe_load(f)
+        run_block(block_config)
