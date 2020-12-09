@@ -29,7 +29,6 @@ class AVRendererControl(ABC):
     def is_configured(self):
         return self.is_configured
 
-
     @abstractmethod
     def load_config(self, config):
         """
