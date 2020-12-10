@@ -153,7 +153,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
 
             wsl_command = 'wsl ' \
                 + '-u root bash -c \"/usr/bin/tascar_cli ' \
-                + str(self.tascar_scn_file_wsl_path) \
+                + str(self.tascar_scn_wsl_path) \
                 + '\"'
             # print(wsl_command)
             self.tascar_process = subprocess.Popen(
@@ -200,7 +200,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
 
             # one shot for the background
             self.video_client.send_message(
-                "/video/play", [0, str(self.skybox_absolute_path)])
+                "/video/play", [0, str(self.skybox_path)])
             self.tascar_client.send_message("/transport/locate", [0.0])
             self.tascar_client.send_message("/transport/start", [])
             self.state = avrc.AVRCState.ACTIVE
@@ -243,17 +243,15 @@ class TargetToneInNoise(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def load_config(self, config):
         # grab the bits we need
-        self.data_root_dir = config["root_dir"]
-        self.tascar_scn_file = pathlib.Path(self.data_root_dir,
-                                            'tascar_scene.tsc')
-        check_path_is_file(self.tascar_scn_file)
-        self.tascar_scn_file_wsl_path = convert_windows_path_to_wsl(
-            self.tascar_scn_file
+        self.tascar_scn_win_path = pathlib.Path(config["tascar_scene_path"])
+        check_path_is_file(self.tascar_scn_win_path)
+        self.tascar_scn_wsl_path = convert_windows_path_to_wsl(
+            self.tascar_scn_win_path
         )
 
-        self.skybox_absolute_path = pathlib.Path(self.data_root_dir,
-                                                 'skybox.mp4')
-        check_path_is_file(self.skybox_absolute_path)
+        # skybox
+        self.skybox_path = pathlib.Path(config["skybox_path"])
+        check_path_is_file(self.skybox_path)
 
         # if we get to here we assume the configuration was successful
         self.state = avrc.AVRCState.CONFIGURED
@@ -307,19 +305,15 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def load_config(self, config):
         # grab the bits we need
-        self.data_root_dir = config["root_dir"]
-
-        # tascar scene
-        self.tascar_scn_file = pathlib.Path(self.data_root_dir,
-                                            'tascar_scene.tsc')
-        check_path_is_file(self.tascar_scn_file)
-        self.tascar_scn_file_wsl_path = convert_windows_path_to_wsl(
-            self.tascar_scn_file)
+        self.tascar_scn_win_path = pathlib.Path(config["tascar_scene_path"])
+        check_path_is_file(self.tascar_scn_win_path)
+        self.tascar_scn_wsl_path = convert_windows_path_to_wsl(
+            self.tascar_scn_win_path
+        )
 
         # skybox
-        self.skybox_absolute_path = pathlib.Path(self.data_root_dir,
-                                                 'skybox.mp4')
-        check_path_is_file(self.skybox_absolute_path)
+        self.skybox_path = pathlib.Path(config["skybox_path"])
+        check_path_is_file(self.skybox_path)
 
         # delay between maskers and target
         self.pre_target_delay = config["pre_target_delay"]
@@ -329,8 +323,8 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         self.present_target_video = config["present_target_video"]
         if self.present_target_video:
             self.target_video_paths = []
-            with open(pathlib.Path(self.data_root_dir,
-                                   config["target_video_list_file"]), 'r') as f:
+            with open(pathlib.Path(config["target_video_list_path"]), 'r') \
+                    as f:
                 for line in f:
                     video_path = pathlib.Path(line.rstrip())
                     check_path_is_file(video_path)

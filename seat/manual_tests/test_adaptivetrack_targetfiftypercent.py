@@ -14,16 +14,15 @@ if __name__ == '__main__':
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     config = {
-                "root_dir": data_root_dir,
-                "keyword_file": "keywords.txt",
-                "logfile": str(pathlib.Path(tmp_dir, 'response_log.csv'))
-            }
+        "keywords_path": str(pathlib.Path(data_root_dir, "keywords.txt")),
+        "log_path": str(pathlib.Path(tmp_dir, 'response_log.csv'))
+    }
     response_mode = responsemode.ExperimenterSelectsCorrectKeywords(config)
 
     config = {
         "initial_probe_level": -6,
         "max_num_trials": 3,
-        "logfile": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
+        "log_path": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
     }
     probe_strategy = probestrategy.TargetFiftyPercent(config)
 

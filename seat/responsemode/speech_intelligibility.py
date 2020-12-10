@@ -4,7 +4,7 @@ import pandas
 import PySimpleGUI as sg
 import util
 import pathlib
-
+import pprint
 
 def kw_button(text, key):
     return sg.B(text,
@@ -19,20 +19,20 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
     the buttons corresponding to the correctly identified keywords.
     """
     def __init__(self, config):
+        # pprint.pprint(config)
 
         # grab the bits we need
-        self.data_root_dir = config["root_dir"]
-        keywords_file = config["keyword_file"]
-        keywords_file_path = pathlib.Path(self.data_root_dir, keywords_file)
-        util.check_path_is_file(keywords_file_path)
-        self.keywords_df = pandas.read_csv(keywords_file_path, header=None)
+        keywords_path = pathlib.Path(config["keywords_path"])
+        util.check_path_is_file(keywords_path)
+        self.keywords_df = pandas.read_csv(keywords_path, header=None)
         # print(self.keywords_df)
 
         self.write_to_log = False
-        if "logfile" in config:
+        if "log_path" in config:
+            print(config["log_path"])
             self.write_to_log = True
-            self.logpath = pathlib.Path(config["logfile"])
-            self.logpath.touch(exist_ok=False)  # do NOT overwrite!
+            self.log_path = pathlib.Path(config["log_path"])
+            self.log_path.touch(exist_ok=False)  # do NOT overwrite!
 
     def show_prompt(self, stimulus_id):
         # keywords = ['Word 1', 'Word 2', 'Word 3', 'Word 4', 'Word 5']
@@ -80,15 +80,14 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                          self.keywords,
                          pandas.DataFrame(result)]
                         )
-                    df_to_write.T.to_csv(self.logpath,
-                        index=False,
-                        header=False,
-                        mode='a')
-
+                    df_to_write.T.to_csv(self.log_path,
+                                         index=False,
+                                         header=False,
+                                         mode='a')
+                self.window.close()
                 return result
             elif event in self.button_keys:
                 self.kw_correct[event] = not self.kw_correct[event]
                 self.window.Element(event).Update(
                     button_color=(('white', ('red', 'green')[self.kw_correct[event]])))
             # print(self.kw_correct)
-        # self.window.Hide()

@@ -48,4 +48,5 @@ class BinaryChoice(ResponseMode):
                 break
         result = (response == self.ground_truth_this_stimulus)
         # print(result)
+        self.window.close()
         return result

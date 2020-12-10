@@ -13,13 +13,20 @@ if __name__ == '__main__':
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     block_config = {
+        "App": {
+            "log_dir": tmp_dir
+        },
         "AVRendererControl": {
             "class": "avrenderercontrol.osc_tascar_wsl.TargetSpeechTwoMaskers",
             "settings": {
-                "root_dir": data_root_dir,
                 "pre_target_delay": 1.5,
                 "present_target_video": True,
-                "target_video_list_file": "target_video.txt"
+                "tascar_scene_path":
+                    str(pathlib.Path(data_root_dir, 'tascar_scene.tsc')),
+                "skybox_path":
+                    str(pathlib.Path(data_root_dir, 'skybox.mp4')),
+                "target_video_list_path":
+                    str(pathlib.Path(data_root_dir, 'target_video.txt'))
             }
         },
         "ProbeStrategy": {
@@ -27,15 +34,14 @@ if __name__ == '__main__':
             "settings": {
                 "initial_probe_level": -6,
                 "max_num_trials": 3,
-                "logfile": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
             }
         },
         "ResponseMode": {
-            "class": "responsemode.speech_intelligibility.ExperimenterSelectsCorrectKeywords",
+            "class":
+                "responsemode.speech_intelligibility.ExperimenterSelectsCorrectKeywords",
             "settings": {
-                "root_dir": data_root_dir,
-                "keyword_file": "keywords.txt",
-                "logfile": str(pathlib.Path(tmp_dir, 'response_log.csv'))
+                "keywords_path":
+                    str(pathlib.Path(data_root_dir, 'keywords.txt')),
             }
         }
     }

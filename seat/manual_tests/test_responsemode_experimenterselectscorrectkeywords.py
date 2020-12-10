@@ -12,10 +12,9 @@ if __name__ == '__main__':
                            datetime.now().strftime("%Y%m%d_%H%M%S"))
     tmp_dir.mkdir(parents=True, exist_ok=True)
     config = {
-                "root_dir": data_root_dir,
-                "keyword_file": "keywords.txt",
-                "logfile": str(pathlib.Path(tmp_dir, 'response_log.csv'))
-            }
+        "keywords_path": str(pathlib.Path(data_root_dir, "keywords.txt")),
+        "log_path": str(pathlib.Path(tmp_dir, 'response_log.csv'))
+    }
     response_mode = responsemode.ExperimenterSelectsCorrectKeywords(config)
 
     response_mode.show_prompt(0)

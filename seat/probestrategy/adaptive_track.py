@@ -16,10 +16,11 @@ class AdaptiveTrack(ProbeStrategy, ABC):
     def __init__(self,config):
         """Deal with comming intialsisation in this parent class"""
         self.write_to_log = False
-        if "logfile" in config:
+        if "log_path" in config:
+            print(config["log_path"])
             self.write_to_log = True
-            self.logpath = pathlib.Path(config["logfile"])
-            self.logpath.touch(exist_ok=False)  # do NOT overwrite!
+            self.log_path = pathlib.Path(config["log_path"])
+            self.log_path.touch(exist_ok=False)  # do NOT overwrite!
 
         self.num_response_intervals = 5  # TODO set this in config
         self.results_df = pd.DataFrame(
@@ -73,8 +74,8 @@ class AdaptiveTrack(ProbeStrategy, ABC):
             # print(df_to_write.to_csv(index=False,
             #                    header=write_header,
             #                    mode='a'))
-            df_to_write.to_csv(self.logpath,
-                               index=False,header=write_header,
+            df_to_write.to_csv(self.log_path,
+                               index=False, header=write_header,
                                mode='a')
 
         # work out where to go next, implemented by child class

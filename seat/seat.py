@@ -6,6 +6,7 @@ import sys
 import PySimpleGUI as sg
 import importlib
 import time
+from datetime import datetime
 import random
 import numpy as np
 import yaml
@@ -42,9 +43,13 @@ def run_block(config):
     with instance_builder(config["AVRendererControl"]) as avrenderer:
 
         # ProbeStrategy
+        config["ProbeStrategy"]["settings"]["log_path"] = pathlib.Path(
+            config["App"]["log_dir"], 'probe_log.csv')
         probe_strategy = instance_builder(config["ProbeStrategy"])
 
         # ResponseMode
+        config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
+            config["App"]["log_dir"], 'response_log.csv')
         response_mode = instance_builder(config["ResponseMode"])
 
         # TODO: ensure compatibility of probe_strategy, response_mode and
@@ -103,31 +108,84 @@ def run_block(config):
 
 
 if __name__ == '__main__':
+    # parse the command line inputs
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--file", help="config file (.yml)")
+    parser.add_argument("-f", "--file",
+                        help="config file (.yml)")
+    parser.add_argument("-o", "--out-dir",
+                        help="output directory for logs/results")
     args = parser.parse_args()
+    print(args)
 
+    # file
+    # - use the provided option otherwise pop a dialoge to choose it
     if args.file is not None:
-        config_file = args.file
-        print('Config file: ' + config_file)
+        file = args.file
+        print('Config file: ' + file)
     else:
         # get file
-        config_file = sg.popup_get_file(
+        file = sg.popup_get_file(
             'Choose the config file',
             file_types=(('yml', '*.yml'),)
             )
-
-    # simple validation
-    if config_file is None:
+    if file is None:
         sys.exit()
     else:
+        file = pathlib.Path(file)
         try:
-            util.check_path_is_file(pathlib.Path(config_file))
+            util.check_path_is_file(file)
         except FileNotFoundError:
-            print('No config file found at ' + config_file)
+            print('No config file found at ' + str(file))
             sys.exit()
 
-    # parse and run
-    with open(config_file, 'r') as f:
+    # read in the config values
+    with open(file, 'r') as f:
         block_config = yaml.safe_load(f)
-        run_block(block_config)
+
+    # got the configuration, now need to arbitrate between values provided in
+    # file and those on the command line
+    # - precedence should be
+    #     1: command line
+    #     2: config file
+    #     3: fail-safe default for any essential entries
+
+    # out-dir
+    # - fail-safe is a datestamped directory relative to the config file
+    out_dir = args.out_dir
+    if out_dir is not None:
+        out_dir = pathlib.Path(out_dir)
+        print('Output directory from command line: ' + str(out_dir))
+
+    if out_dir is None:
+        if ("App" in block_config) and ("log_dir" in block_config["App"]):
+            out_dir = pathlib.Path(block_config["App"]["log_dir"])
+            print('Output directory from config file: ' + str(out_dir))
+
+    if out_dir is None:
+        datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if (file.name in ('config.yml')):
+            # This is default and pretty meaningless
+            # so a sibling directory should be ok
+            # TODO: Add check for multiple yml files in directory
+            out_dir = pathlib.Path(file.parent, datestr)
+        else:
+            # make a subdirectory with the same name as the config file
+            config_file_as_dir = file.with_suffix('')
+            out_dir = pathlib.Path(config_file_as_dir, datestr)
+        print('Output directory (auto-generated): ' + str(out_dir))
+
+    # by now we should have a value for out_dir
+    try:
+        out_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        print('The output directory already exists.')
+        sys.exit()
+
+    # write/overwrite the entry back into config
+    if ("App" in block_config):
+        block_config["App"]["log_dir"] = str(out_dir)
+    else:
+        block_config["App"] = {"log_dir": str(out_dir)}
+
+    # finally, run the block
+    run_block(block_config)
