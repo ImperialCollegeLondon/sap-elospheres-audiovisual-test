@@ -30,7 +30,7 @@ if __name__ == '__main__':
             }
         },
         "ProbeStrategy": {
-            "class": "probestrategy.adaptive_track.TargetTwentyPercent",
+            "class": "probestrategy.adaptive_track.TargetFiftyPercent",
             "settings": {
                 "initial_probe_level": -6,
                 "max_num_trials": 3,
