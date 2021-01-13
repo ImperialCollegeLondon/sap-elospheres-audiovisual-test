@@ -1,10 +1,10 @@
 import unittest
-
+import numpy as np
 from probestrategy import FixedProbeLevel
 from probestrategy import TargetEightyPercent
 from probestrategy import TargetFiftyPercent
 from probestrategy import TargetTwentyPercent
-
+from probestrategy import PsychometricFunction
 
 class TestFixedProbeLevel(unittest.TestCase):
     def test_end_criterion(self):
@@ -127,6 +127,7 @@ class TestTargetEightyPercent(unittest.TestCase):
         correct_result = 1.5 * -1 + correct_result
         ps.store_trial_result(dummy_data)
         self.assertEqual(correct_result, ps.get_next_probe_level())
+
 
 
 class TestTargetTwentyPercent(unittest.TestCase):
@@ -299,6 +300,87 @@ class TestTargetFiftyPercent(unittest.TestCase):
         correct_result = 1.5 * -3 + correct_result
         ps.store_trial_result(dummy_data)
         self.assertEqual(correct_result, ps.get_next_probe_level())
+
+    def test_convergence_from_above(self):
+        num_trials = 1000
+        trials_to_average = 100
+        true_threshold = 0
+        initial_probe_level = true_threshold + 10
+        true_slope = 0.1
+        step_size = 0.1
+        acceptable_margin = 1.0
+        config = {"initial_probe_level": initial_probe_level,
+                  "max_num_trials": num_trials,
+                  "num_trials_to_average": trials_to_average,
+                  "step_size": step_size}
+        ps = TargetFiftyPercent(config)
+        dummy_listener = PsychometricFunction(threshold_db=true_threshold,
+                                              slope_at_threshold=true_slope)
+        while not ps.is_finished():
+            probe_level = ps.get_next_probe_level()
+            success_vector = dummy_listener.probe_response(probe_level,
+                                                           num_responses=5)
+            # print(success_vector)
+            ps.store_trial_result(success_vector)
+
+        # ps.display_pyschometric_curve()
+
+        estimated_threshold = ps.get_current_estimate()
+        estimation_error = np.abs(estimated_threshold-true_threshold)
+        print('Estimation error from above (db): ' + str(estimation_error))
+        self.assertTrue(estimation_error <= acceptable_margin)
+
+    def test_convergence_from_below(self):
+        num_trials = 1000
+        trials_to_average = 100
+        true_threshold = 0
+        initial_probe_level = true_threshold - 10
+        true_slope = 0.1
+        step_size = 0.1
+        acceptable_margin = 1.0
+        config = {"initial_probe_level": initial_probe_level,
+                  "max_num_trials": num_trials,
+                  "num_trials_to_average": trials_to_average,
+                  "step_size": step_size}
+        ps = TargetFiftyPercent(config)
+        dummy_listener = PsychometricFunction(threshold_db=true_threshold,
+                                              slope_at_threshold=true_slope)
+        while not ps.is_finished():
+            probe_level = ps.get_next_probe_level()
+            success_vector = dummy_listener.probe_response(probe_level,
+                                                           num_responses=5)
+            # print(success_vector)
+            ps.store_trial_result(success_vector)
+        estimated_threshold = ps.get_current_estimate()
+        estimation_error = np.abs(estimated_threshold-true_threshold)
+        print('Estimation error from below (db): ' + str(estimation_error))
+        self.assertTrue(estimation_error <= acceptable_margin)
+
+    def test_convergence_from_true_value(self):
+        num_trials = 1000
+        trials_to_average = 100
+        true_threshold = 0
+        initial_probe_level = true_threshold
+        true_slope = 0.1
+        step_size = 0.1
+        acceptable_margin = 1.0
+        config = {"initial_probe_level": initial_probe_level,
+                  "max_num_trials": num_trials,
+                  "num_trials_to_average": trials_to_average,
+                  "step_size": step_size}
+        ps = TargetFiftyPercent(config)
+        dummy_listener = PsychometricFunction(threshold_db=true_threshold,
+                                              slope_at_threshold=true_slope)
+        while not ps.is_finished():
+            probe_level = ps.get_next_probe_level()
+            success_vector = dummy_listener.probe_response(probe_level,
+                                                           num_responses=5)
+            # print(success_vector)
+            ps.store_trial_result(success_vector)
+        estimated_threshold = ps.get_current_estimate()
+        estimation_error = np.abs(estimated_threshold-true_threshold)
+        print('Estimation error from true value (db): ' + str(estimation_error))
+        self.assertTrue(estimation_error <= acceptable_margin)
 
 
 if __name__ == '__main__':
