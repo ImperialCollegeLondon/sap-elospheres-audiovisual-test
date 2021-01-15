@@ -3,7 +3,8 @@ from .probe_strategy import ProbeStrategy
 import numpy as np
 import pandas as pd
 import pathlib
-# import matplotlib as plt
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class AdaptiveTrack(ProbeStrategy, ABC):
@@ -23,13 +24,33 @@ class AdaptiveTrack(ProbeStrategy, ABC):
             self.log_path = pathlib.Path(config["log_path"])
             self.log_path.touch(exist_ok=False)  # do NOT overwrite!
 
-        self.verbosity = 0
+        
         if "verbosity" in config:
             self.verbosity = config["verbosity"]
+        else:
+            self.verbosity = 0
+            
         if "num_trials_to_average" in config:
             self.num_trials_to_average = config["num_trials_to_average"]
         else:
             self.num_trials_to_average = 1
+        
+        
+        if "display_plot" in config:
+            self.display_plot = config["display_plot"]
+        else:
+            self.display_plot = False
+            
+        if "save_probe_history_plot" in config:
+            self.save_probe_history_plot = config["save_probe_history_plot"]
+            if self.save_probe_history_plot:
+                if "fig_save_path" in config:
+                    self.fig_save_path = config["fig_save_path"]
+                else:
+                    raise ValueError("config is missing fig_save_path key")
+        else:
+            self.save_probe_history_plot = False    
+        self.save_probe_history_plot
         self.num_response_intervals = 5  # TODO set this in config
         self.results_df = pd.DataFrame(
             columns=['trial_id',
@@ -37,7 +58,7 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                      'target_level',
                      'probe_level',
                      'success_vector',
-                     'trial_mean'])
+                     'trial_mean'], dtype=float)
         self.trial_counter = 0
         self.stimulus_id = 0
 
@@ -88,8 +109,40 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                                index=False, header=write_header,
                                mode='a')
 
-        # work out where to go next, implemented by child class
-        self.prepare_next_probe()
+        # plot the result
+        if self.display_plot:
+            if self.verbosity >= 3:
+                print('plotting probe_level over time')
+            # create fig on first iteration    
+            if len(self.results_df.trial_id)==1:
+                self.fig, self.ax = plt.subplots()
+            self.ax.cla()
+            sns.lineplot(data=self.results_df, x="trial_id", y="probe_level",
+                      ax=self.ax, hue="target_level")
+            # if len(self.results_df.trial_id)==1:
+                # self.line, = self.ax.plot(self.results_df.target_level)
+                # self.ax.set_xlim([0, self.max_num_trials])
+            self.ax.set_xlim([0, self.max_num_trials])
+            if len(self.results_df.trial_id)==1:
+                plt.ion()
+                plt.show()
+            else:
+                # print('trial_id type: ' + str(type(self.results_df.trial_id)))
+                # print('target_level type: ' + str(type(self.results_df.target_level)))
+                # self.line.set_xdata(self.results_df.trial_id)
+                # self.line.set_xdata(self.results_df.target_level)
+                plt.pause(0.1)
+            
+        
+        if not self.is_finished():
+            # work out where to go next, implemented by child class
+            self.prepare_next_probe()
+        else:
+            if self.save_probe_history_plot:
+                fig, ax = plt.subplots()
+                sns.lineplot(data=self.results_df, x="trial_id", y="probe_level",
+                          ax=ax, hue="target_level")
+                plt.savefig(self.fig_save_path)
 
     def get_next_stimulus_id(self):
         return self.stimulus_id
