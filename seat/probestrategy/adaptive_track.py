@@ -267,3 +267,71 @@ class TargetFiftyPercent(AdaptiveTrack):
             return True
         else:
             return False
+
+
+class DualTargetTwentyEightyPercent(AdaptiveTrack):
+    def __init__(self, config):
+        """Constructor deals with configuring the class
+
+        Use parent class' constuctor to create an empty DataFrame in which to
+        store results
+        """
+        super().__init__(config)
+
+        self.probe_level = config["initial_probe_level"]
+        self.target_level_list = [0.2, 0.8]
+        self.change_vector = [[1, 0, -1, -2, -3, -4],  # 20% target
+                              [4, 3,  2,  1,  0, -1]]  # 80% target
+        self.step_size = 1.5
+        self.max_num_trials = config["max_num_trials"]
+        if "step_size" in config:
+            self.step_size = config["step_size"]
+            
+        # randomly assign trials to tracks
+        trials_per_track = np.zeros(2);
+        trials_per_track[0] = np.round((self.max_num_trials-1)/2)
+        trials_per_track[1] = self.max_num_trials - trials_per_track[0]
+        rng = np.random.default_rng()
+        self.track_assignment = np.concatenate(
+            [np.zeros(trials_per_track[0].astype(int)),
+             np.ones(trials_per_track[1].astype(int))]).astype(int)
+        if self.verbosity >=3:
+            print(self.track_assignment)
+        rng.shuffle(self.track_assignment)
+        
+        self.target_level = self.target_level_list[self.trial_counter]
+        
+        
+    def prepare_next_probe(self):
+        # get entries from dataframe which correspond to the current target
+        next_trial = self.trial_counter + 1
+        target_level_index = self.track_assignment[next_trial]
+        track_df = self.results_df[self.results_df.target_level==self.target_level_list[target_level_index]]
+        if len(track_df)==0:
+            # select the first element
+            success_vector = self.results_df.iloc[0]["success_vector"]
+            prev_probe_level = self.results_df.iloc[0]["probe_level"]
+        else:
+            # select the most recent element of this track
+            success_vector = track_df.iloc[-1]["success_vector"]
+            prev_probe_level = track_df.iloc[-1]["probe_level"]
+            
+        num_correct = np.sum(success_vector)
+        if self.verbosity >=3:
+            print('num_correct: ' + num_correct)
+        self.probe_level = prev_probe_level + \
+            self.step_size * self.change_vector[target_level_index][num_correct]
+        self.trial_counter += 1
+        self.stimulus_id += 1
+        self.target_level = self.target_level_list[
+            self.track_assignment[self.trial_counter]]
+
+    def get_current_estimate(self):
+        # TODO: use all available data to form estimate
+        return np.mean(self.results_df.probe_level[-self.num_trials_to_average:])
+
+    def is_finished(self):
+        if (len(self.results_df) >= self.max_num_trials):
+            return True
+        else:
+            return False
