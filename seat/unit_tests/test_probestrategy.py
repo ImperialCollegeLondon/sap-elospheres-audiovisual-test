@@ -344,22 +344,27 @@ class TestDualTargetTwentyEightyPercent(unittest.TestCase):
         num_trials = 1000
         trials_to_average = 100
         true_threshold = 0
-        start_offset_list = [-10, 0, 10]
+        start_offset_list = [-5, 0, 5]
         true_slope = 0.1
-        step_size = 0.5
-        acceptable_margin = 3.0
+        step_size = 1.5
+        acceptable_margin = 20.0
         for start_offset in start_offset_list:
             initial_probe_level = true_threshold + start_offset
-            fig_save_path='convergence_step_' + str(step_size) + \
+            probe_fig_save_path='convergence_step_' + str(step_size) + \
                           '_from_srt_' + str(start_offset) + '.pdf'
+            regression_fig_save_path='psychometric_function_step_' + \
+                          str(step_size) + \
+                          '_from_srt_' + str(start_offset) + '.pdf'              
             config = {"initial_probe_level": initial_probe_level,
                       "max_num_trials": num_trials,
                       "num_trials_to_average": trials_to_average,
                       "step_size": step_size,
-                      "verbosity": 1,
+                      "verbosity": 0,
                       "display_plot": False,
                       "save_probe_history_plot": True,
-                      "fig_save_path": fig_save_path}
+                      "probe_fig_save_path": probe_fig_save_path,
+                      "save_regression_plot": True,
+                      "regression_fig_save_path": regression_fig_save_path}
             ps = DualTargetTwentyEightyPercent(config)
             dummy_listener = PsychometricFunction(threshold_db=true_threshold,
                                                   slope_at_threshold=true_slope)

@@ -44,13 +44,23 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         if "save_probe_history_plot" in config:
             self.save_probe_history_plot = config["save_probe_history_plot"]
             if self.save_probe_history_plot:
-                if "fig_save_path" in config:
-                    self.fig_save_path = config["fig_save_path"]
+                if "probe_fig_save_path" in config:
+                    self.probe_fig_save_path = config["probe_fig_save_path"]
                 else:
                     raise ValueError("config is missing fig_save_path key")
         else:
             self.save_probe_history_plot = False    
-        self.save_probe_history_plot
+        
+        if "save_regression_plot" in config:
+            self.save_regression_plot = config["save_regression_plot"]
+            if self.save_regression_plot:
+                if "regression_fig_save_path" in config:
+                    self.regression_fig_save_path = config["regression_fig_save_path"]
+                else:
+                    raise ValueError("config is missing regression_fig_save_path key")
+        else:
+            self.save_regression_plot = False
+        
         self.num_response_intervals = 5  # TODO set this in config
         self.results_df = pd.DataFrame(
             columns=['trial_id',
@@ -142,8 +152,27 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                 fig, ax = plt.subplots()
                 sns.lineplot(data=self.results_df, x="trial_id", y="probe_level",
                           ax=ax, hue="target_level")
-                plt.savefig(self.fig_save_path)
-
+                plt.savefig(self.probe_fig_save_path)
+                plt.close(fig)
+            if self.save_regression_plot:
+                # print(self.results_df)
+                
+                probe_level_col = self.results_df.probe_level.values
+                probe_level = np.repeat(probe_level_col, self.num_response_intervals)
+                success = np.ndarray((len(self.results_df), self.num_response_intervals))
+                for i,vector in enumerate(self.results_df.success_vector):
+                    # print(vector)
+                    success[i,:] = vector
+                success = success.flatten()
+                # print(success)
+                # print('success shape: ' + str(np.shape(success)))
+                # print(probe_level)
+                # print('probe_level shape: ' + str(np.shape(probe_level)))                
+                flat_df = pd.DataFrame({"probe_level": probe_level,
+                                        "success": success})
+                sns_plot = sns.lmplot(data=flat_df, x="probe_level", y="success",
+                          logistic=True, x_estimator=np.mean)
+                sns_plot.savefig(self.regression_fig_save_path)
     def get_next_stimulus_id(self):
         return self.stimulus_id
 
