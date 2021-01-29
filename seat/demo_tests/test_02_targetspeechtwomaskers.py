@@ -26,7 +26,9 @@ if __name__ == '__main__':
                 "skybox_path":
                     str(pathlib.Path(data_root_dir, 'skybox.mp4')),
                 "target_video_list_path":
-                    str(pathlib.Path(data_root_dir, 'target_video.txt'))
+                    str(pathlib.Path(data_root_dir, 'target_video.txt')),
+                "masker1_position": [1.412, 1.412, 0],
+                "masker2_position": [1.412, -1.412, 0]
             }
         },
         "ProbeStrategy": {

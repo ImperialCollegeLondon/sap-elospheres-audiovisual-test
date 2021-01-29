@@ -50,6 +50,62 @@ def convert_windows_path_to_wsl(pathlib_win_path):
         raise error
 
 
+class SourceInterface:
+    
+    
+    def __init__(self, video_client=None, sampler_client=None,
+                 tascar_client=None, screen_id=None,
+                 tascar_source_address=None):
+        self.video_client = video_client
+        self.screen_id = screen_id
+        self.sampler_client = sampler_client
+        self.tascar_client = tascar_client
+        self.tascar_source_address = tascar_source_address
+        
+        # Unity local transform on screens, in unity's coordinates
+        self.quad_x_euler = 0.
+        self.quad_y_euler = 0.
+        self.quad_x_scale = 167.
+        self.quad_y_scale = 97.
+        
+    def set_position(self, xyz):
+        pos = np.array(xyz, dtype=np.float32)
+        # tascar is just the values
+        self.tascar_client.send_message(
+            self.tascar_source_address + '/pos', xyz)
+        
+        # unity we only care about the angle
+        # Euler angles can represent a three dimensional rotation by 
+        # performing three separate rotations around individual axes. 
+        # In Unity these rotations are performed around the Z axis, 
+        # the X axis, and the Y axis, in that order.
+        
+        # unity x <-> tascar -y
+        # unity y <-> tascar  z
+        # unity z <-> tascar  x
+        
+        # so we can interpret
+        # rot_X as elevation (90-inclination)
+        # rot_Y as azimuth
+        if not (xyz[2]==0):
+            print('Sources off the horizontal plane are not yet supported!')
+            raise NotImplementedError()
+        hypotxy = np.hypot(xyz[0], xyz[1])
+        r = np.hypot(hypotxy, xyz[2])
+        unity_Y_deg = -np.rad2deg(np.arctan2(xyz[1], xyz[0]))
+        unity_X_deg = np.rad2deg(np.arcsin(xyz[2]/r))
+        print('Unity_Y_deg: ' + str(unity_Y_deg))
+        print('Unity_X_deg: ' + str(unity_X_deg))
+        self.video_client.send_message("/video/position",
+                                       [self.screen_id,
+                                        unity_X_deg, unity_Y_deg, 0.,
+                                         self.quad_x_euler,
+                                         self.quad_y_euler,
+                                         self.quad_x_scale,
+                                         self.quad_y_scale
+                                       ])
+
+
 class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
     """
     Base class to implement core functionality of co-ordinating the unity-based
@@ -131,6 +187,13 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.moduleConfig['tascar']['ipaddress'].get(str),
             self.moduleConfig['tascar']['oscport'].get(int)
             ])
+        
+        # set the camera rig rotation so that front direction is correct
+        # EulerX, EulerY, EulerZ in Unity's left handed, z is depth coordinates
+        # self.video_client.send_message("/set_orientation", [0., 90., 0.])
+        self.video_client.send_message("/set_orientation", [0., 0., 0.])
+        
+        
 
     def close_osc(self):
         # this isn't really necessary but avoids warnings in unittest
@@ -331,9 +394,18 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                     self.target_video_paths.append(video_path)
 
 
+        # assume colocated sources, 2 m in front of listener
+        self.target_position = [2., 0., 0.]
+        self.masker1_position = [2., 0., 0.]
+        self.masker2_position = [2., 0., 0.]
 
+        if "target_position" in config:
+            self.target_position = config["target_position"]
+        if "masker2_position" in config:
+            self.masker1_position = config["masker1_position"]
+        if "masker1_position" in config:
+            self.masker2_position = config["masker2_position"]    
 
-        # get the masker directions
 
         # if we get to here we assume the configuration was successful
         self.state = avrc.AVRCState.CONFIGURED
@@ -354,14 +426,44 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                 self.state = avrc.AVRCState.INIT
 
             # continue with setup
+            self.scene_name = 'point_sources'
             self.target_source_name = 'source2'
             self.masker1_source_name = 'source1'
             self.masker2_source_name = 'source3'
             self.target_linear_gain = 1.0
             self.masker_linear_gain = 1.0
 
-            # TODO: set the positions of the maskers
-
+            # create interfaces to sources
+            self.target_interface = SourceInterface(
+                video_client=self.video_client,
+                screen_id=2,
+                sampler_client=self.sampler_client2,
+                tascar_client=self.tascar_client,
+                tascar_source_address= ('/' + self.scene_name +
+                                       '/'+self.target_source_name)
+                )
+            
+            self.masker1_interface = SourceInterface(
+                video_client=self.video_client,
+                screen_id=1,
+                sampler_client=self.sampler_client1,
+                tascar_client=self.tascar_client,
+                tascar_source_address= ('/' + self.scene_name +
+                                       '/'+self.masker1_source_name))
+            self.masker2_interface = SourceInterface(
+                video_client=self.video_client,
+                screen_id=3,
+                sampler_client=self.sampler_client3,
+                tascar_client=self.tascar_client,
+                tascar_source_address= ('/' + self.scene_name +
+                                       '/'+self.masker2_source_name))
+            
+            # set directions
+            print('Setting target postion ' + str(self.target_position))
+            self.target_interface.set_position(self.target_position)
+            self.masker1_interface.set_position(self.masker1_position)
+            self.masker2_interface.set_position(self.masker2_position)
+            
             # save state
             self.state = avrc.AVRCState.READY_TO_START
         else:
@@ -411,3 +513,6 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
         # print(msg_address + str(msg_contents))
         self.sampler_client2.send_message(msg_address, msg_contents)
+
+    
+            
