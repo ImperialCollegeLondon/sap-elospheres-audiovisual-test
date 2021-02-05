@@ -3,7 +3,7 @@
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1" caliblevel="60">
 			<position>
-				0  -1 -0.3 0
+				0  1 0.3 0
 		 </position>
 			<sound>
 				<plugins>
@@ -12,7 +12,7 @@
 		</source>
 		<source name="source2" caliblevel="60">
 			<position>
-				0  -1 0 0
+				0  1 0 0
 		 </position>
 			<sound>
 				<plugins>
@@ -21,7 +21,7 @@
 		</source>
 		<source name="source3" caliblevel="60">
 			<position>
-				0  -1 0.3 0
+				0  1 -0.3 0
 		 </position>
 			<sound>
 				<plugins>
@@ -34,7 +34,7 @@
 	</scene>
 	<scene name="background_noise" guiscale="6" >
 		<source name="pink">
-			<position>0 2 0 0</position>
+			<position>0 -2 0 0</position>
 			<sound><plugins>
 					<pink level="65" fmax="16000"/>
 			</plugins></sound>

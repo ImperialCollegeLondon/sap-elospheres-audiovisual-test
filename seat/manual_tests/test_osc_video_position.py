@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # set the camera rig rotation so that front direction is correct
     # EulerX, EulerY, EulerZ in Unity's left handed, z is depth coordinates
-    video_client.send_message("/set_orientation", [0., 90., 0.])
+    # video_client.send_message("/set_orientation", [0., 90., 0.])
 
     screen_id = 2
 

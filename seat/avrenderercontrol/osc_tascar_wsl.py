@@ -51,8 +51,7 @@ def convert_windows_path_to_wsl(pathlib_win_path):
 
 
 class SourceInterface:
-    
-    
+
     def __init__(self, video_client=None, sampler_client=None,
                  tascar_client=None, screen_id=None,
                  tascar_source_address=None):
@@ -61,29 +60,30 @@ class SourceInterface:
         self.sampler_client = sampler_client
         self.tascar_client = tascar_client
         self.tascar_source_address = tascar_source_address
-        
+
         # Unity local transform on screens, in unity's coordinates
         self.quad_x_euler = 0.
         self.quad_y_euler = 0.
         self.quad_x_scale = 167.
         self.quad_y_scale = 97.
-        
+
     def set_position(self, xyz):
         pos = np.array(xyz, dtype=np.float32)
         # tascar is just the values
-        self.tascar_client.send_message(
-            self.tascar_source_address + '/pos', xyz)
-        
+        msg_address = self.tascar_source_address + '/pos'
+        print('Setting source postion OSC:' + msg_address + ' ' + str(xyz))
+        self.tascar_client.send_message(msg_address, xyz)
+
         # unity we only care about the angle
-        # Euler angles can represent a three dimensional rotation by 
-        # performing three separate rotations around individual axes. 
-        # In Unity these rotations are performed around the Z axis, 
+        # Euler angles can represent a three dimensional rotation by
+        # performing three separate rotations around individual axes.
+        # In Unity these rotations are performed around the Z axis,
         # the X axis, and the Y axis, in that order.
-        
+
         # unity x <-> tascar -y
         # unity y <-> tascar  z
         # unity z <-> tascar  x
-        
+
         # so we can interpret
         # rot_X as elevation (90-inclination)
         # rot_Y as azimuth
@@ -187,13 +187,11 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.moduleConfig['tascar']['ipaddress'].get(str),
             self.moduleConfig['tascar']['oscport'].get(int)
             ])
-        
+
         # set the camera rig rotation so that front direction is correct
         # EulerX, EulerY, EulerZ in Unity's left handed, z is depth coordinates
         # self.video_client.send_message("/set_orientation", [0., 90., 0.])
-        self.video_client.send_message("/set_orientation", [0., 0., 0.])
-        
-        
+        # self.video_client.send_message("/set_orientation", [0., 0., 0.])
 
     def close_osc(self):
         # this isn't really necessary but avoids warnings in unittest
@@ -404,7 +402,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         if "masker2_position" in config:
             self.masker1_position = config["masker1_position"]
         if "masker1_position" in config:
-            self.masker2_position = config["masker2_position"]    
+            self.masker2_position = config["masker2_position"]
 
 
         # if we get to here we assume the configuration was successful
@@ -442,7 +440,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                 tascar_source_address= ('/' + self.scene_name +
                                        '/'+self.target_source_name)
                 )
-            
+
             self.masker1_interface = SourceInterface(
                 video_client=self.video_client,
                 screen_id=1,
@@ -457,18 +455,21 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                 tascar_client=self.tascar_client,
                 tascar_source_address= ('/' + self.scene_name +
                                        '/'+self.masker2_source_name))
-            
-            # set directions
-            print('Setting target postion ' + str(self.target_position))
-            self.target_interface.set_position(self.target_position)
-            self.masker1_interface.set_position(self.masker1_position)
-            self.masker2_interface.set_position(self.masker2_position)
-            
+
             # save state
             self.state = avrc.AVRCState.READY_TO_START
         else:
             raise RuntimeError('Cannot call setup() before it has been '
                                'configured')
+
+    def start_scene(self):
+        print('Entered start_scene in child class')
+        super().start_scene()
+        time.sleep(5)
+        # set directions of all sources
+        self.target_interface.set_position(self.target_position)
+        self.masker1_interface.set_position(self.masker1_position)
+        self.masker2_interface.set_position(self.masker2_position)
 
     def set_probe_level(self, probe_level):
         """Probe level is SNR in dB
@@ -480,6 +481,12 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
     def present_trial(self, stimulus_id):
         # print('Entered present_trial() with stimulus: ' + str(stimulus_id))
 
+        # set directions of all sources
+        self.target_interface.set_position(self.target_position)
+        self.masker1_interface.set_position(self.masker1_position)
+        self.masker2_interface.set_position(self.masker2_position)
+        time.sleep(0.1)
+        
         # start maskers
         msg_address = ("/" + self.masker1_source_name
                        + "/" + str(stimulus_id+1)
@@ -513,6 +520,3 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
         # print(msg_address + str(msg_contents))
         self.sampler_client2.send_message(msg_address, msg_contents)
-
-    
-            
