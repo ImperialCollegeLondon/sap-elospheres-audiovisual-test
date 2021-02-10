@@ -70,3 +70,24 @@ The second test demonstrates a speech intelligibility task
 python -m demo_tests.test_02_targetspeechtwomaskers
 ```
 If the listeningeffortplayer app is running then the target speech video should be visible.
+
+## Real usage
+
+- Open the ListeningEffortPlayer app
+- Open anaconda prompt
+  - Activate the `seat` environment
+  - Run setup script for JackTrip
+  - Run seat.py with path to config file
+  - Experimenter selects the correctly reported keywords
+
+```
+cd C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test
+git pull
+conda env update -n seat --file seat.yml
+conda activate seat
+cd seat
+python .\setup_jacktrip_wsl.py
+# wait for it to start before pressing enter to continue
+# run the seat.py script, passing the path to a config.yml file, e.g.
+python seat.py -f  C:\seat_experiments\20210210_8_16_colocated_speech_audioonly\config.yml
+```
