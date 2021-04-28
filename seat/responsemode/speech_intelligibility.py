@@ -40,17 +40,34 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         self.keywords = self.keywords_df.loc[stimulus_id, :]
         self.stimulus_id = stimulus_id
         # print(self.keywords)
+        
+        # Define stimulus response buttons
         button_row_layout = []
         self.button_keys = []
         self.kw_correct = {}
+        self.keystroke_to_button_key = {}
+
         for kw_num, keyword in enumerate(self.keywords):
             button_key = 'kw_' + str(kw_num)
             button_row_layout += [kw_button(keyword, key=button_key)]
             self.button_keys += [button_key]
             self.kw_correct[button_key] = False
+            # map buttons to keystrokes - first button responds to '1'
+            self.keystroke_to_button_key[str(kw_num+1)]  = button_key 
+            
+        # print('button_keys:')
         # print(self.button_keys)
-
+        # print('keystroke_keys:')
+        # print(self.keystroke_to_button_key)
+        
+        
+        # Define other buttons/special keys
+        self.all_correct_keystroke = 'a'
+        
         self.done_button_key = 'done_button'
+        self.done_keystroke = ' ' 
+        self.done_event = {self.done_button_key, self.done_keystroke}
+        
         layout = [[sg.Text('Select the correctly identified words')],
                   button_row_layout,
                   [sg.Button('Done', key=self.done_button_key)]
@@ -58,16 +75,33 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
 
         self.window = sg.Window('Speech intelligibility - keywords', layout,
                                 keep_on_top=True,
+                                return_keyboard_events=True,
+                                # use_default_focus=False,
                                 finalize=True)
+        
+    def update_button_status(self):
+        for key in self.button_keys:
+            self.window.Element(key).Update(
+                    button_color=(('white', ('red', 'green')[self.kw_correct[key]])))
+
+    def handle_keyword_button_press(self, event):
+            self.kw_correct[event] = not self.kw_correct[event]
+            self.update_button_status()
+    
 
     def wait(self):
         while True:             # Event Loop
             event, values = self.window.Read()
             # print(event, values)
+            # if len(event) == 1:
+            #     print('%s - %s' % (event, ord(event)))
+            # else:
+            #     print(event,values)
+            
             if event == sg.WIN_CLOSED:
                 self.window.close()
                 return
-            elif event == self.done_button_key:
+            elif event in self.done_event:
                 # convert output to an array
                 result = []
                 for i in range(len(self.button_keys)):
@@ -86,8 +120,13 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                                          mode='a')
                 self.window.close()
                 return result
+            elif event == self.all_correct_keystroke:
+                for button in self.button_keys:
+                    self.kw_correct[button] = True
+                self.update_button_status()
             elif event in self.button_keys:
-                self.kw_correct[event] = not self.kw_correct[event]
-                self.window.Element(event).Update(
-                    button_color=(('white', ('red', 'green')[self.kw_correct[event]])))
+                self.handle_keyword_button_press(event)
+            elif event in self.keystroke_to_button_key:
+                self.handle_keyword_button_press(self.keystroke_to_button_key[event])
+ 
             # print(self.kw_correct)
