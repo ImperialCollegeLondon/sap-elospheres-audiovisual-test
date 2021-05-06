@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import pandas as pd
 
 
 class ProbeStrategy(ABC):
@@ -27,3 +28,16 @@ class ProbeStrategy(ABC):
     @abstractmethod
     def is_finished(self):
         pass
+
+    def get_trial_data(self):
+        """
+        Get data describing the latest trial (e.g. for writing to log)
+        
+        Child classes should override this but functional, non-informative
+        implementation given here to speed up development
+        Returns
+        -------
+        DataFrame.
+            single row
+        """
+        return pd.DataFrame([['']], columns=['no_info'])

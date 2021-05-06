@@ -1,5 +1,6 @@
 from .response_mode import ResponseMode
 import PySimpleGUI as sg
+import pandas as pd
 
 
 def kw_button(text, key):
@@ -18,8 +19,11 @@ class BinaryChoice(ResponseMode):
         # grab the bits we need
         self.ground_truth = config["signal_present"]
 
+
     def show_prompt(self, stimulus_id):
         self.ground_truth_this_stimulus = self.ground_truth[stimulus_id]
+        self.response = []
+        self.correct = []
         self.no_key = '_NO_'
         self.yes_key = '_YES_'
         layout = [[sg.Text('Was there a signal present?')],
@@ -41,12 +45,18 @@ class BinaryChoice(ResponseMode):
                 self.window.close()
                 return
             elif event == self.no_key:
-                response = False
+                self.response = False
                 break
             elif event == self.yes_key:
-                response = True
+                self.response = True
                 break
-        result = (response == self.ground_truth_this_stimulus)
+        self.correct = (self.response == self.ground_truth_this_stimulus)
         # print(result)
         self.window.close()
-        return result
+        return self.correct
+
+    def get_trial_data(self):
+        return pd.DataFrame([[self.ground_truth_this_stimulus,
+                              self.response, self.correct]],
+                            columns = ['signal_present','signal_reported',
+                                       'correct_response'])

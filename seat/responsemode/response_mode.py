@@ -11,3 +11,7 @@ class ResponseMode(ABC):
     @abstractmethod
     def wait(self):
         pass
+    
+    @abstractmethod
+    def get_trial_data(self):
+        pass

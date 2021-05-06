@@ -1,5 +1,6 @@
 from enum import Enum
 from abc import ABC, abstractmethod
+from pandas import DataFrame
 
 
 class AVRCState(Enum):
@@ -60,3 +61,18 @@ class AVRendererControl(ABC):
     def present_trial(self, stimulus_id):
         """Trigger trial using stimulus given by stimulus_id (0-based)"""
         pass
+
+
+    def get_trial_data(self):
+        """
+        Get data describing the latest trial (e.g. for writing to log)
+        
+        Child classes should override this but functional, non-informative
+        implementation given here to speed up development
+        Returns
+        -------
+        DataFrame.
+            single row
+        """
+        return DataFrame([['']], columns=['no_info'])
+    

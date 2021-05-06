@@ -1,6 +1,7 @@
 import probestrategy
 import avrenderercontrol
 import util
+import seatlog as sl
 
 import sys
 import PySimpleGUI as sg
@@ -9,6 +10,7 @@ import time
 from datetime import datetime
 import random
 import numpy as np
+import pandas as pd
 import yaml
 import pathlib
 import argparse
@@ -25,7 +27,7 @@ def instance_builder(config):
     return callable_class_constructor(config["settings"])
 
 
-def run_block(config):
+def run_block(config, subject_data=None, condition_data=None):
     """Main function for executing a test
     TODO:
     The number of trials is limited by the lowest of
@@ -36,75 +38,114 @@ def run_block(config):
 
     """
 
+
+    if (subject_data is None):
+        # minimal empty data
+        subject_data = pd.DataFrame([['']], columns=['subject_id'])
+    else:
+        # basic checks
+        if not isinstance(subject_data, pd.DataFrame):
+            raise TypeError('subject_data should be a DataFrame')
+        if (subject_data.shape[0] != 1):
+            raise ValueError('subject_data should have a single row')
+
+    if (condition_data is None):
+        # minimal empty data
+        condition_data = pd.DataFrame([['']], columns=['condition_id'])
+    else:
+        # basic checks
+        if not isinstance(condition_data, pd.DataFrame):
+            raise TypeError('condition_data should be a DataFrame')
+        if (subject_data.shape[0] != 1):
+            raise ValueError('condition_data should have a single row')
+    
     # settings
     pre_trial_delay = (0.1, 0.2)
 
-    # AVRendererControl
-    with instance_builder(config["AVRendererControl"]) as avrenderer:
-
-        # ProbeStrategy
-        config["ProbeStrategy"]["settings"]["log_path"] = pathlib.Path(
-            config["App"]["log_dir"], 'probe_log.csv')
-        probe_strategy = instance_builder(config["ProbeStrategy"])
-
-        # ResponseMode
-        config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
-            config["App"]["log_dir"], 'response_log.csv')
-        response_mode = instance_builder(config["ResponseMode"])
-
-        # TODO: ensure compatibility of probe_strategy, response_mode and
-        #       avrenderer
-
-        # start test
-        #    - play background video
-        #    - play background audio
-        avrenderer.start_scene()
-
-        # wait for experimenter
-        input('Scene has started. Press Enter to start first trial...')
-
-        # main loop
-        while not probe_strategy.is_finished():
-
-            # Get required parameters
-            stimulus_id = probe_strategy.get_next_stimulus_id()
-            probe_level = probe_strategy.get_next_probe_level()
-
-            # console feedback
-            print('Presenting trial...')
-            print('stimulus_id: ' + str(stimulus_id))
-            print('probe_level:'
-                  + probe_strategy.get_next_probe_level_as_string())
-
-            # Prepare the renderer (behaviour depends on  implementation)
-            avrenderer.set_probe_level(probe_level)
-
-            # Show the response display UI
-            response_mode.show_prompt(stimulus_id)
-
-            # Pause
-            # (random duration between preTrialDelay[0] and preTrialDelay[1])
-            time.sleep(pre_trial_delay[0]
-                       + ((pre_trial_delay[1]-pre_trial_delay[0])
-                          * random.random()))
-
-            # Present the stimulus//mixture
-            # e.g. send OSC commands to start videos/samplers
-            avrenderer.present_trial(stimulus_id)
-
-            # Wait for response
-            # - result type depends on the response mode
-            # - ProbeStrategy and ResponseMode must be chosen to be compatible
-            result = response_mode.wait()
-
-            if result is None:
-                # window was closed/cancelled - attempt to end gracefully
-                break
-
-            probe_strategy.store_trial_result(result)
-
-        print(str(probe_strategy.get_current_estimate()))
-        return
+    log_path = pathlib.Path(config["App"]["log_dir"], 'log.csv')
+    with sl.CSVLogger(log_path) as mylogger:
+    
+    
+        # AVRendererControl
+        with instance_builder(config["AVRendererControl"]) as avrenderer:
+    
+            # ProbeStrategy
+            config["ProbeStrategy"]["settings"]["log_path"] = pathlib.Path(
+                config["App"]["log_dir"], 'probe_log.csv')
+            probe_strategy = instance_builder(config["ProbeStrategy"])
+    
+            # ResponseMode
+            config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
+                config["App"]["log_dir"], 'response_log.csv')
+            response_mode = instance_builder(config["ResponseMode"])
+    
+            # TODO: ensure compatibility of probe_strategy, response_mode and
+            #       avrenderer
+    
+            # start test
+            #    - play background video
+            #    - play background audio
+            avrenderer.start_scene()
+    
+            # wait for experimenter
+            input('Scene has started. Press Enter to start first trial...')
+    
+    
+            # main loop
+            trial_id = 0  # 1-based counter is incremented at start of loop
+            while not probe_strategy.is_finished():
+    
+                trial_id += 1
+                
+                # Get required parameters
+                stimulus_id = probe_strategy.get_next_stimulus_id()
+                probe_level = probe_strategy.get_next_probe_level()
+    
+                # console feedback
+                print('Presenting trial...')
+                print('stimulus_id: ' + str(stimulus_id))
+                print('probe_level:'
+                      + probe_strategy.get_next_probe_level_as_string())
+    
+                # Prepare the renderer (behaviour depends on  implementation)
+                avrenderer.set_probe_level(probe_level)
+    
+                # Show the response display UI
+                response_mode.show_prompt(stimulus_id)
+    
+                # Pause
+                # (random duration between preTrialDelay[0] and preTrialDelay[1])
+                time.sleep(pre_trial_delay[0]
+                           + ((pre_trial_delay[1]-pre_trial_delay[0])
+                              * random.random()))
+    
+                # Present the stimulus//mixture
+                # e.g. send OSC commands to start videos/samplers
+                avrenderer.present_trial(stimulus_id)
+    
+                # Wait for response
+                # - result type depends on the response mode
+                # - ProbeStrategy and ResponseMode must be chosen to be compatible
+                result = response_mode.wait()
+    
+                if result is None:
+                    # window was closed/cancelled - attempt to end gracefully
+                    break
+    
+                probe_strategy.store_trial_result(result)
+    
+                # Trial is finished. Collect and push log data
+                mylogger.append(trial_id, subject_data)
+                mylogger.append(trial_id, condition_data)
+                mylogger.append(trial_id, probe_strategy.get_trial_data(), 
+                                prefix='ps_')
+                mylogger.append(trial_id, avrenderer.get_trial_data(),
+                                prefix='av_')
+                mylogger.append(trial_id, response_mode.get_trial_data(),
+                                prefix='rm_')
+    
+            print(str(probe_strategy.get_current_estimate()))
+            return
 
 
 if __name__ == '__main__':

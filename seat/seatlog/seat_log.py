@@ -30,9 +30,11 @@ class CSVLogger:
         self.log_path.touch(exist_ok=False)  # do NOT overwrite!
         
         self.current_row_id = []  # unique key for dataframe - probaby the trial number
-        self.current_row_df = None      # dataframe being built for the current row
-        self.full_df = None         # dataframe containing all the data
+        self.current_row_df = pd.DataFrame(columns=['row_id'])      # dataframe being built for the current row
+        self.full_df = pd.DataFrame(columns=['row_id'])         # dataframe containing all the data
         
+        self.current_row_df.set_index('row_id',inplace=True)
+        self.full_df.set_index('row_id',inplace=True)
 
     # implement conext manager magic
     def __enter__(self):
@@ -89,7 +91,7 @@ class CSVLogger:
 
         # add prefix to column names just in case they get duplicated
         if (prefix != ''):
-            data = data.add_prefix()
+            data = data.add_prefix(prefix)
             
         # force the index of the added dataframe row
         data["row_id"]=row_id
@@ -98,7 +100,8 @@ class CSVLogger:
 
         # check if we are appending to the current row or starting a new one
         if (row_id is not self.current_row_id):
-            if (self.full_df is not None) and (row_id in self.full_df.row_id):
+            # print(self.full_df)
+            if (row_id in self.full_df.index.values):
                 raise ValueError('Cannot reuse row_id once row is finalised')
             self.finalise_current_row()
             self.current_row_id = row_id
@@ -120,30 +123,23 @@ class CSVLogger:
         # print(self.full_df)
         # print(self.current_row_df)
         
-        if (self.full_df is None):
-            if (self.current_row_df is not None):
-                self.full_df = self.current_row_df
-                self.full_df.to_csv(self.log_path,
+        if (self.current_row_df.shape[0] == 0):
+            print('Nothing to save')
+        else:       
+            if self.dfs_are_consistent():
+                # write row then join
+                self.current_row_df.to_csv(self.log_path,
                      index=True,
-                     header=True,
-                     mode='w')
-            return
-        
-        if self.dfs_are_consistent():
-            # write row then join
-            self.current_row_df.to_csv(self.log_path,
-                 index=True,
-                 header=False,
-                 mode='a')
-            self.full_df = pd.concat([self.full_df, self.current_row_df])
-            return
-        
-        # join then overwrite full log
-        self.full_df = pd.concat([self.full_df, self.current_row_df])
-        self.full_df.to_csv(self.log_path,
-        index=True,
-        header=True,
-        mode='w')
+                     header=False,
+                     mode='a')
+                self.full_df = pd.concat([self.full_df, self.current_row_df])
+            else:            
+                # join then overwrite full log
+                self.full_df = pd.concat([self.full_df, self.current_row_df])
+                self.full_df.to_csv(self.log_path,
+                index=True,
+                header=True,
+                mode='w')
 
                
             

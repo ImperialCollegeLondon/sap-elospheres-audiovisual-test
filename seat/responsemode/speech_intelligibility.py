@@ -1,6 +1,6 @@
 from .response_mode import ResponseMode
 import numpy as np
-import pandas
+import pandas as pd
 import PySimpleGUI as sg
 import util
 import pathlib
@@ -10,7 +10,8 @@ def kw_button(text, key):
     return sg.B(text,
                 size=(10, 1),
                 button_color=('white', 'red'),
-                key=key)
+                key=key,
+                focus=False)
 
 
 class ExperimenterSelectsCorrectKeywords(ResponseMode):
@@ -24,7 +25,7 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         # grab the bits we need
         keywords_path = pathlib.Path(config["keywords_path"])
         util.check_path_is_file(keywords_path)
-        self.keywords_df = pandas.read_csv(keywords_path, header=None)
+        self.keywords_df = pd.read_csv(keywords_path, header=None)
         # print(self.keywords_df)
 
         self.write_to_log = False
@@ -39,6 +40,7 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         # print(stimulus_id)
         self.keywords = self.keywords_df.loc[stimulus_id, :]
         self.stimulus_id = stimulus_id
+        self.result = []
         # print(self.keywords)
         
         # Define stimulus response buttons
@@ -70,7 +72,7 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         
         layout = [[sg.Text('Select the correctly identified words')],
                   button_row_layout,
-                  [sg.Button('Done', key=self.done_button_key)]
+                  [sg.Button('Done', key=self.done_button_key, focus=True)]
                   ]
 
         self.window = sg.Window('Speech intelligibility - keywords', layout,
@@ -103,23 +105,22 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                 return
             elif event in self.done_event:
                 # convert output to an array
-                result = []
                 for i in range(len(self.button_keys)):
-                    result.append(self.kw_correct[self.button_keys[i]])
+                    self.result.append(self.kw_correct[self.button_keys[i]])
                 # print(result)
 
                 if self.write_to_log:
-                    df_to_write = pandas.concat(
-                        [pandas.DataFrame([self.stimulus_id]),
+                    df_to_write = pd.concat(
+                        [pd.DataFrame([self.stimulus_id]),
                          self.keywords,
-                         pandas.DataFrame(result)]
+                         pd.DataFrame(self.result)]
                         )
                     df_to_write.T.to_csv(self.log_path,
                                          index=False,
                                          header=False,
                                          mode='a')
                 self.window.close()
-                return result
+                return self.result
             elif event == self.all_correct_keystroke:
                 for button in self.button_keys:
                     self.kw_correct[button] = True
@@ -130,3 +131,15 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                 self.handle_keyword_button_press(self.keystroke_to_button_key[event])
  
             # print(self.kw_correct)
+
+    def get_trial_data(self):
+        df = pd.DataFrame([self.stimulus_id],columns=['stimulus_id']);
+        ncorrect = 0
+        for i, key in enumerate(self.button_keys):
+            df[key] = self.keywords[i] # store the <i>th keyword in column kw_<i>
+            df[key+'_correct'] = self.kw_correct[key]
+            if self.kw_correct[key]==True:
+                ncorrect +=1
+        df['n_correct'] = ncorrect
+        df['n_keywords'] = i+1
+        return df
