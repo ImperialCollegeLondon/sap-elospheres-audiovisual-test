@@ -22,6 +22,7 @@ if __name__ == '__main__':
     config = {
         "initial_probe_level": -6,
         "max_num_trials": 3,
+        "verbosity": 0,
         "log_path": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
     }
     probe_strategy = probestrategy.TargetFiftyPercent(config)
@@ -32,3 +33,4 @@ if __name__ == '__main__':
         response_mode.show_prompt(stimulus_id)
         result = response_mode.wait()
         probe_strategy.store_trial_result(result)
+        print(probe_strategy.get_trial_data())

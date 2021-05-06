@@ -1,5 +1,6 @@
 from .probe_strategy import ProbeStrategy
 import numpy as np
+import pandas as pd
 
 
 class FixedProbeLevel(ProbeStrategy):
@@ -37,3 +38,13 @@ class FixedProbeLevel(ProbeStrategy):
             return True
         else:
             return False
+
+    def get_trial_data(self):
+        """
+        Get the result of the most recent trial
+        Returns
+        -------
+        DataFrame.
+            single row with single column called 'result'
+        """
+        return pd.DataFrame([[self.storedResults[-1]]], columns=['result'])

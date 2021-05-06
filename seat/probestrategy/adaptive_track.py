@@ -47,7 +47,7 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                 if "probe_fig_save_path" in config:
                     self.probe_fig_save_path = config["probe_fig_save_path"]
                 else:
-                    raise ValueError("config is missing fig_save_path key")
+                    raise ValueError("config is missing probe_fig_save_path key")
         else:
             self.save_probe_history_plot = False    
         
@@ -63,19 +63,38 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         
         self.num_response_intervals = 5  # TODO set this in config
         self.results_df = pd.DataFrame(
-            columns=['trial_id',
-                     'stimulus_id',
-                     'target_level',
-                     'probe_level',
-                     'success_vector',
-                     'trial_mean'], dtype=float)
+            {'trial_id': pd.Series([], dtype='int'),
+             'stimulus_id': pd.Series([], dtype='int'),
+             'target_level': pd.Series([], dtype='float'),
+             'probe_level': pd.Series([], dtype='float'),
+             'success_vector': pd.Series([], dtype='bool'),
+             'num_correct': pd.Series([], dtype='int'),
+             'trial_mean': pd.Series([], dtype='float')})
         self.trial_counter = 0
         self.stimulus_id = 0
 
-    @abstractmethod
+
     def prepare_next_probe(self):
-        """This is private and must be overriden by child class"""
-        pass
+        num_correct = self.results_df.iloc[-1]["num_correct"]
+        self.probe_level += self.step_size * self.change_vector[num_correct]
+        self.trial_counter += 1
+        self.stimulus_id += 1
+        if self.verbosity > 3:
+            print('prepare_next_probe')
+            print(f'{num_correct} correct - next level {self.probe_level}')
+        
+
+    def get_current_estimate(self):
+        # quick and dirty current estimate is the latest probe level
+        # TODO: use the available data to form estimate
+        return self.probe_level
+
+    def is_finished(self):
+        if (len(self.results_df) >= self.max_num_trials):
+            return True
+        else:
+            return False
+
 
     def validate_result(self, result):
         """Raise exception if result does not match the expected form"""
@@ -98,6 +117,7 @@ class AdaptiveTrack(ProbeStrategy, ABC):
             'target_level': self.target_level,
             'probe_level': self.probe_level,
             'success_vector': result,
+            'num_correct': np.sum(result),
             'trial_mean': np.mean(result)},
             ignore_index=True)
         if self.verbosity > 2:
@@ -173,6 +193,7 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                 sns_plot = sns.lmplot(data=flat_df, x="probe_level", y="success",
                           logistic=True, x_estimator=np.mean)
                 sns_plot.savefig(self.regression_fig_save_path)
+                
     def get_next_stimulus_id(self):
         return self.stimulus_id
 
@@ -182,6 +203,14 @@ class AdaptiveTrack(ProbeStrategy, ABC):
     def get_next_probe_level_as_string(self):
         return str(self.probe_level)
 
+    def get_trial_data(self):
+        df = self.results_df.iloc[[-1],:].copy()
+        # success_vector is an array which doesnt play nicely so remove it
+        df.drop('success_vector', axis=1, inplace=True)
+        print(df)
+        print(f'df has type {type(df)} and shape {df.shape}')
+        return df
+    
     # def display_pyschometric_curve(self):
     #     probed_levels = self.results_df.probe_level.unique()
     #     for ilevel, probe_level in enumerate(probed_levels):
@@ -210,24 +239,6 @@ class TargetEightyPercent(AdaptiveTrack):
         self.step_size = 1.5
         self.max_num_trials = config["max_num_trials"]
 
-    def prepare_next_probe(self):
-        success_vector = self.results_df.iloc[-1]["success_vector"]
-        num_correct = np.sum(success_vector)
-        self.probe_level += self.step_size * self.change_vector[num_correct]
-        self.trial_counter += 1
-        self.stimulus_id += 1
-
-    def get_current_estimate(self):
-        # quick and dirty current estimate is the latest probe level
-        # TODO: use the available data to form estimate
-        return self.probe_level
-
-    def is_finished(self):
-        if (len(self.results_df) >= self.max_num_trials):
-            return True
-        else:
-            return False
-
 
 class TargetTwentyPercent(AdaptiveTrack):
     def __init__(self, config):
@@ -243,24 +254,6 @@ class TargetTwentyPercent(AdaptiveTrack):
         self.change_vector = [1, 0, -1, -2, -3, -4]
         self.step_size = 1.5
         self.max_num_trials = config["max_num_trials"]
-
-    def prepare_next_probe(self):
-        success_vector = self.results_df.iloc[-1]["success_vector"]
-        num_correct = np.sum(success_vector)
-        self.probe_level += self.step_size * self.change_vector[num_correct]
-        self.trial_counter += 1
-        self.stimulus_id += 1
-
-    def get_current_estimate(self):
-        # quick and dirty current estimate is the latest probe level
-        # TODO: use the available data to form estimate
-        return self.probe_level
-
-    def is_finished(self):
-        if (len(self.results_df) >= self.max_num_trials):
-            return True
-        else:
-            return False
 
 
 class TargetFiftyPercent(AdaptiveTrack):
@@ -280,22 +273,6 @@ class TargetFiftyPercent(AdaptiveTrack):
         if "step_size" in config:
             self.step_size = config["step_size"]
 
-    def prepare_next_probe(self):
-        success_vector = self.results_df.iloc[-1]["success_vector"]
-        num_correct = np.sum(success_vector)
-        self.probe_level += self.step_size * self.change_vector[num_correct]
-        self.trial_counter += 1
-        self.stimulus_id += 1
-
-    def get_current_estimate(self):
-        # TODO: use all available data to form estimate
-        return np.mean(self.results_df.probe_level[-self.num_trials_to_average:])
-
-    def is_finished(self):
-        if (len(self.results_df) >= self.max_num_trials):
-            return True
-        else:
-            return False
 
 
 class DualTargetTwentyEightyPercent(AdaptiveTrack):
@@ -338,14 +315,13 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
         track_df = self.results_df[self.results_df.target_level==self.target_level_list[target_level_index]]
         if len(track_df)==0:
             # select the first element
-            success_vector = self.results_df.iloc[0]["success_vector"]
+            num_correct = self.results_df.iloc[0]["num_correct"]
             prev_probe_level = self.results_df.iloc[0]["probe_level"]
         else:
             # select the most recent element of this track
-            success_vector = track_df.iloc[-1]["success_vector"]
+            num_correct = track_df.iloc[-1]["num_correct"]
             prev_probe_level = track_df.iloc[-1]["probe_level"]
             
-        num_correct = np.sum(success_vector)
         if self.verbosity >=3:
             print('num_correct: ' + num_correct)
         self.probe_level = prev_probe_level + \
@@ -358,9 +334,3 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
     def get_current_estimate(self):
         # TODO: use all available data to form estimate
         return np.mean(self.results_df.probe_level[-self.num_trials_to_average:])
-
-    def is_finished(self):
-        if (len(self.results_df) >= self.max_num_trials):
-            return True
-        else:
-            return False
