@@ -5,12 +5,14 @@ import PySimpleGUI as sg
 import util
 import pathlib
 import pprint
+import time
 
 def kw_button(text, key):
     return sg.B(text,
                 size=(10, 1),
                 button_color=('white', 'red'),
                 key=key,
+                disabled=True,
                 focus=False)
 
 
@@ -34,6 +36,12 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
             self.write_to_log = True
             self.log_path = pathlib.Path(config["log_path"])
             self.log_path.touch(exist_ok=False)  # do NOT overwrite!
+        
+        self.wait_interval = 1 # default value avoids accidental entry
+        if "wait_interval" in config:
+            self.wait_interval = config["wait_interval"]
+            
+            
 
     def show_prompt(self, stimulus_id):
         # keywords = ['Word 1', 'Word 2', 'Word 3', 'Word 4', 'Word 5']
@@ -72,7 +80,8 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         
         layout = [[sg.Text('Select the correctly identified words')],
                   button_row_layout,
-                  [sg.Button('Done', key=self.done_button_key, focus=True)]
+                  [sg.Button('Done', key=self.done_button_key, focus=True,
+                             disabled=True)]
                   ]
 
         self.window = sg.Window('Speech intelligibility - keywords', layout,
@@ -80,6 +89,8 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
                                 return_keyboard_events=True,
                                 # use_default_focus=False,
                                 finalize=True)
+        
+        # self.disable_buttons()
         
     def update_button_status(self):
         for key in self.button_keys:
@@ -91,7 +102,28 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
             self.update_button_status()
     
 
+    def disable_buttons(self):
+        for button_key in self.button_keys:
+            self.window[button_key].update(disabled=True)
+        self.window['done_button'].update(disabled=True)
+
+    def enable_buttons(self):
+        for button_key in self.button_keys:
+            self.window[button_key].update(disabled=False)
+        self.window['done_button'].update(disabled=False)
+        
+
     def wait(self):
+        # initial loop only responds to WIN_CLOSED
+        target_time = time.monotonic() + self.wait_interval
+        while (time.monotonic() < target_time):             # Event Loop
+            event, values = self.window.Read(timeout=50) # need timeout otherwise we get stuck!
+            if event == sg.WIN_CLOSED:
+                self.window.close()
+                return
+            
+        # start responding to all events
+        self.enable_buttons()
         while True:             # Event Loop
             event, values = self.window.Read()
             # print(event, values)
