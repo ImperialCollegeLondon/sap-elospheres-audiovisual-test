@@ -5,6 +5,7 @@ import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import warnings
 
 
 class AdaptiveTrack(ProbeStrategy, ABC):
@@ -283,6 +284,7 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
         store results
         """
         super().__init__(config)
+        self.max_run_per_track = 3
 
         self.probe_level = config["initial_probe_level"]
         self.target_level_list = [0.2, 0.8]
@@ -292,7 +294,11 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
         self.max_num_trials = config["max_num_trials"]
         if "step_size" in config:
             self.step_size = config["step_size"]
-            
+        if "max_run_per_track" in config:
+            self.max_run_per_track = config["max_run_per_track"]
+        
+        self.num_reshuffles_before_warn = 10000   
+        
         # randomly assign trials to tracks
         trials_per_track = np.zeros(2);
         trials_per_track[0] = np.round((self.max_num_trials-1)/2)
@@ -303,8 +309,31 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
              np.ones(trials_per_track[1].astype(int))]).astype(int)
         if self.verbosity >=3:
             print(self.track_assignment)
-        rng.shuffle(self.track_assignment)
+        shuffle_ok = False
+        seg_len = self.max_run_per_track+1
         
+        reshuffle_counter = 0
+        while (not shuffle_ok):
+            if (reshuffle_counter > self.num_reshuffles_before_warn):
+                warnings.warn((f'Searching for a random sequence of length ' 
+                               f'{self.max_num_trials} with a run of '
+                               f'<={self.max_run_per_track} is taking a while!'
+                               f'  Consider allowing longer runs or fewer trials.'))
+            
+            # do a new shuffle
+            rng.shuffle(self.track_assignment)
+            reshuffle_counter += 1
+            
+            # test it
+            shuffle_ok=True
+            for i in range(self.max_num_trials-seg_len):
+                seg = self.track_assignment[i + np.arange(0,seg_len)]
+                # print(f'{seg}')
+                if sum(seg) in [0, seg_len]:
+                    # print(f'max run exceeded {seg} sum {sum(seg)}')
+                    shuffle_ok = False
+         
+
         self.target_level = self.target_level_list[self.trial_counter]
         
         

@@ -380,6 +380,39 @@ class TestDualTargetTwentyEightyPercent(unittest.TestCase):
                   ' (db): ' + str(estimation_error))
             self.assertTrue(estimation_error <= acceptable_margin)
 
-
+    def test_track_assignment(self):
+        num_repeats = 1000
+        num_trials = 20
+        max_run_per_track = 3
+        # required parameters with arbitrary values
+        initial_probe_level = 0
+        
+        config = {"initial_probe_level": initial_probe_level,
+                  "max_num_trials": num_trials,
+                  "max_run_per_track": max_run_per_track}
+        
+        max_seq_length = np.zeros((num_repeats, 1))
+        for i in range(num_repeats):
+            ps = DualTargetTwentyEightyPercent(config)
+            ta = ps.track_assignment
+            
+            # find repeating elements - use different approach to that inside 
+            # DualTargetTwentyEightyPercent. This may be faster
+            # diff: vector of non zero values where theres is a change
+            # r_[1,]: prepend non zero value as first element is a change
+            # flatnonzero: find indices where there is a change
+            # amax(diff: find maximum distance beween changes
+            max_seq_length[i,0] = np.amax(np.diff(
+                np.flatnonzero(np.r_[1,np.diff(ta)])))
+            
+            if max_seq_length[i,0]>max_run_per_track:
+                print(f'{ta}')
+        
+        max_all_runs = np.amax(max_seq_length)
+        # print(f'maximum sequence lenfth {max_all_runs}')
+        
+        self.assertTrue(max_all_runs<=max_run_per_track)
+        
+        
 if __name__ == '__main__':
     unittest.main()
