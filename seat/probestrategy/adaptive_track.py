@@ -291,11 +291,11 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
         self.change_vector = [[1, 0, -1, -2, -3, -4],  # 20% target
                               [4, 3,  2,  1,  0, -1]]  # 80% target
         self.step_size = 1.5
-        self.max_num_trials = config["max_num_trials"]
+        self.max_num_trials = int(config["max_num_trials"])
         if "step_size" in config:
             self.step_size = config["step_size"]
         if "max_run_per_track" in config:
-            self.max_run_per_track = config["max_run_per_track"]
+            self.max_run_per_track = int(config["max_run_per_track"])
         
         self.num_reshuffles_before_warn = 10000   
         
