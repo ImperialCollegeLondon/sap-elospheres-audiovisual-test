@@ -257,7 +257,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
                 # we got an error, which means we couldn't get the pid
                 # nothing to be done but exit gracefully
                 print('couldn''t get pid of tascar_cli')
-                sys.exit("probably tascar_cli failed to start")
+                raise RuntimeError("probably tascar_cli failed to start")
 
             # one shot for the background
             self.video_client.send_message(
