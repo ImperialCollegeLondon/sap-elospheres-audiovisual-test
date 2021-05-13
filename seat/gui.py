@@ -20,21 +20,32 @@ def gui(csv_file):
     print(subject_id_list)
     
     # define the gui
+    label_size = (8,1)
+    key_meta_name = "subject_name"
+    key_meta_age = "subject_age"
+    key_meta_sex = "subject_sex"
+    meta_keys = [key_meta_name, key_meta_age, key_meta_sex]
     key_subject_combo = "-subject-"
     key_block_combo = "-block-"
     key_config_text = "-config-"
     key_run_button = "-run-"
-    layout = [[sg.Text('Select the subject then the block number')],
-              [sg.Text('Subject: '),
-               sg.Combo(subject_id_list, key=key_subject_combo, enable_events=True, size=(20,1))],
-              [sg.Text('Block: '),
-               sg.Combo([''], key=key_block_combo, enable_events=True, size=(20,1), disabled=True)],
-              [sg.Text('Config: '),
-               sg.Text('', key=key_config_text, size=(60,1))],
+    layout = [[sg.Text('Enter participant details (optional, unvalidated)')],
+              [sg.Text('Name: ',size=label_size),
+               sg.Input(key=key_meta_name)],
+              [sg.Text('Age: ',size=label_size),
+               sg.Input(key=key_meta_age)],              
+              [sg.Text('Sex: ',size=label_size),
+               sg.Input(key=key_meta_sex)],
+              [sg.Text('Select the subject then the block number')],
+              [sg.Text('Subject: ',size=label_size),
+               sg.Combo(subject_id_list, key=key_subject_combo, enable_events=True, size=(8,1))],
+              [sg.Text('Block: ',size=label_size),
+               sg.Combo([''], key=key_block_combo, enable_events=True, size=(8,1), disabled=True)],
+              [sg.Text('Config: ',size=label_size),
+               sg.Input('', key=key_config_text, size=(60,1), justification='right',disabled=True,text_color='grey')],
               [sg.Button('Run', key=key_run_button, focus=True,
-                             disabled=True)],
-              
-                  ]
+                             disabled=True)]
+             ]
 
     window = sg.Window('SEAT block selector', layout,
                                 keep_on_top=False,
@@ -44,7 +55,7 @@ def gui(csv_file):
 
     while True:             # Event Loop
         event, values = window.Read()
-        print(event, values)
+        # print(event, values)
         
         if event == sg.WIN_CLOSED:
             window.close()
@@ -75,6 +86,13 @@ def gui(csv_file):
                 window[key_config_text].Update(value='')
                 window[key_run_button].Update(disabled=True)
         elif event == key_run_button:
+            # prepare metadata as single row dataframe
+            subject_data = dict([(key, window[key].get()) for key in meta_keys])
+            # n.b. need to wrap dict in list
+            subject_data = pd.DataFrame.from_records([subject_data])
+
+            
+            
             config_file = pathlib.Path(window[key_config_text].get())
             print(config_file)
             datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -94,7 +112,13 @@ def gui(csv_file):
                 else:
                     block_config["App"] = {"log_dir": str(out_dir)}
                     
-                seat.run_block(block_config)
+                try:
+                    seat.run_block(block_config, subject_data=subject_data)
+                except Exception as e:
+                    # tb = traceback.format_exc()
+                    print(f'An error happened.  Here is the info:', e)
+                    sg.popup_error(f'Something went wrong running the test!\nCheck the console for more information.', e)
+                        
 
 if __name__ == '__main__':
     # parse the command line inputs
