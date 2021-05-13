@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import numpy as np
 import pandas as pd
 import pathlib
 import PySimpleGUI as sg
@@ -8,6 +9,7 @@ import yaml
 
 import seat
 import util
+
 
 
 # class ExperimentBlockSelector(csv_file):
@@ -20,7 +22,7 @@ def gui(csv_file):
     print(subject_id_list)
     
     # define the gui
-    label_size = (8,1)
+    label_size = (14,1)
     key_meta_name = "subject_name"
     key_meta_age = "subject_age"
     key_meta_sex = "subject_sex"
@@ -29,23 +31,37 @@ def gui(csv_file):
     key_block_combo = "-block-"
     key_config_text = "-config-"
     key_run_button = "-run-"
+    
+    # conditions as a separate thing for readability
+    condition_keys = df.columns
+    condition_display_layout = [[sg.Text(key, size=label_size, justification='right')] +
+                                [sg.Input('', key=key, size=(60,1),
+                                          justification='left', disabled=True,
+                                          text_color='grey')]
+                                for key in condition_keys]
+    
+    
     layout = [[sg.Text('Enter participant details (optional, unvalidated)')],
-              [sg.Text('Name: ',size=label_size),
+              [sg.Text('Name',size=label_size, justification='right'),
                sg.Input(key=key_meta_name)],
-              [sg.Text('Age: ',size=label_size),
+              [sg.Text('Age',size=label_size, justification='right'),
                sg.Input(key=key_meta_age)],              
-              [sg.Text('Sex: ',size=label_size),
+              [sg.Text('Sex',size=label_size, justification='right'),
                sg.Input(key=key_meta_sex)],
               [sg.Text('Select the subject then the block number')],
-              [sg.Text('Subject: ',size=label_size),
+              [sg.Text('Subject: ',size=label_size, justification='right'),
                sg.Combo(subject_id_list, key=key_subject_combo, enable_events=True, size=(8,1))],
-              [sg.Text('Block: ',size=label_size),
+              [sg.Text('Block: ',size=label_size, justification='right'),
                sg.Combo([''], key=key_block_combo, enable_events=True, size=(8,1), disabled=True)],
-              [sg.Text('Config: ',size=label_size),
+              [sg.Text('Config: ',size=label_size, justification='right'),
                sg.Input('', key=key_config_text, size=(60,1), justification='right',disabled=True,text_color='grey')],
-              [sg.Button('Run', key=key_run_button, focus=True,
-                             disabled=True)]
-             ]
+              [sg.HorizontalSeparator()]
+              ]
+    layout += [[sg.Text('Condition specification for selected block')]]
+    layout += condition_display_layout
+    layout += [sg.HorizontalSeparator()],
+    layout += [[sg.Button('Run', key=key_run_button, focus=True,
+                              disabled=True)]]
 
     window = sg.Window('SEAT block selector', layout,
                                 keep_on_top=False,
@@ -63,38 +79,50 @@ def gui(csv_file):
         elif event == key_subject_combo:
             subject_id = values[key_subject_combo]
             # subject_id = values
-            print(f'Selected subject {subject_id}')
+            # print(f'Selected subject {subject_id}')
             # populate block combo
             block_id_list = df[df.subject_id==subject_id].block_id.unique().tolist()
             window[key_block_combo].Update(values=block_id_list)
             window[key_block_combo].Update(value='', disabled=False)
             window[key_config_text].Update(value='')
-            window[key_run_button].Update(disabled=True)           
+            window[key_run_button].Update(disabled=True)
+            for key in condition_keys:
+                    window[key].Update(value='')
         elif event == key_block_combo:
             block_id = values[key_block_combo]
-            print(f'Selected block {block_id}')
+            # print(f'Selected block {block_id}')
             subject_id = values[key_subject_combo]
             # find a matching directory
             search_str = f'{subject_id}_{block_id}_*/config.yml'
-            print(search_str)
+            # print(search_str)
             matches = sorted(pathlib.Path(csv_file).parent.glob(search_str))
-            print(matches)
-            if len(matches) == 1:
-                window[key_config_text].Update(value=str(matches[0]))
-                window[key_run_button].Update(disabled=False)
-            else:
+            
+            # find a matching row
+            idx = np.flatnonzero((df.subject_id==subject_id) & (df.block_id==block_id))
+            
+            if (len(matches) != 1) or (len(idx) != 1):
+                # can't uniquely determine the condition
                 window[key_config_text].Update(value='')
                 window[key_run_button].Update(disabled=True)
+                for key in condition_keys:
+                    window[key].Update(value='')
+            else:
+                window[key_config_text].Update(value=str(matches[0]))
+                window[key_run_button].Update(disabled=False)
+                for key in condition_keys:
+                    window[key].Update(value=df[key].iloc[idx].item())
+                
         elif event == key_run_button:
             # prepare metadata as single row dataframe
             subject_data = dict([(key, window[key].get()) for key in meta_keys])
             # n.b. need to wrap dict in list
             subject_data = pd.DataFrame.from_records([subject_data])
 
+            condition_data = df.loc[(df.subject_id==subject_id) & (df.block_id==block_id)]
             
             
             config_file = pathlib.Path(window[key_config_text].get())
-            print(config_file)
+            # print(config_file)
             datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
             out_dir = pathlib.Path(config_file.parent, datestr)
             
@@ -113,7 +141,8 @@ def gui(csv_file):
                     block_config["App"] = {"log_dir": str(out_dir)}
                     
                 try:
-                    seat.run_block(block_config, subject_data=subject_data)
+                    seat.run_block(block_config, subject_data=subject_data,
+                                   condition_data = condition_data)
                 except Exception as e:
                     # tb = traceback.format_exc()
                     print(f'An error happened.  Here is the info:', e)
