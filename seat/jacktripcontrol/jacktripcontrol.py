@@ -1,5 +1,8 @@
-import subprocess
 from pathlib import Path
+import psutil
+import subprocess
+import time
+
 
 module_path = Path(__file__).parent.absolute()
 # TODO: Add platform check/alternatives
@@ -8,6 +11,7 @@ module_path = Path(__file__).parent.absolute()
 INIT_SCRIPT = Path(module_path, "init_env.ps1")
 START_LOCAL_SCRIPT = Path(module_path, "start_local.ps1")
 START_REMOTE_SCRIPT = Path(module_path, "start_wsl.ps1")
+KILL_REMOTE_SCRIPT = Path(module_path, "kill_wsl.ps1")
 TEST_REMOTE_METRONOME_SCRIPT = Path(module_path, "test_metronome.ps1")
 CONNECT_SOUNDCARD_SCRIPT = Path(module_path,
                                 "connect_jacktrip_receive_to_soundcard.ps1")
@@ -37,8 +41,28 @@ class JackTripControl:
         self.isRunning = True
 
     def stop(self):
-        if self.isRunning:
-            pass  # TODO kill the processes
+        # this check fails if we want to start/stop from
+        # separate scripts
+        #if self.isRunning: 
+            subprocess.run(["powershell.exe", KILL_REMOTE_SCRIPT],
+                           shell=True,check=True)
+            
+            
+            local_process_names = ["jackd.exe"] #only need to kill jack (jacktrip will die anyway)
+
+            for proc in psutil.process_iter():
+                # check whether the process name matches
+                if proc.name() in local_process_names:
+                    proc.terminate()
+
+            
+
+            time.sleep(1)
+            for proc in psutil.process_iter():
+                # check whether the process name matches
+                if proc.name() in local_process_names:
+                    proc.kill()
+            self.isRunning = False
 
     def connect(self):
         if self.isRunning:
