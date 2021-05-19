@@ -191,4 +191,4 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         """
         # cancelling the window returns None, otherwise its the button text
         return_dict = {'OK': True, None: False} 
-        return return_dict[sg.popup_ok('popup_ok')]
+        return return_dict[sg.popup_ok(message)]
