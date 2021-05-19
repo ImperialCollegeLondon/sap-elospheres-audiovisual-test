@@ -175,3 +175,20 @@ class ExperimenterSelectsCorrectKeywords(ResponseMode):
         df['n_correct'] = ncorrect
         df['n_keywords'] = i+1
         return df
+    
+    def continue_when_ready(self, message="Click continue when ready..."):
+        """
+        Parameters
+        ----------
+        message : STR, optional
+            Message to display. The default is "Click continue when ready...".
+
+        Returns
+        -------
+        Bool.:  Depending on implementation it may be possible to cancel. In 
+            this case the return value will be False.
+
+        """
+        # cancelling the window returns None, otherwise its the button text
+        return_dict = {'OK': True, None: False} 
+        return return_dict[sg.popup_ok('popup_ok')]

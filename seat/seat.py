@@ -88,7 +88,8 @@ def run_block(config, subject_data=None, condition_data=None):
             avrenderer.start_scene()
     
             # wait for experimenter
-            input('Scene has started. Press Enter to start first trial...')
+            response_mode.continue_when_ready(
+                'Scene has started. Press Enter to start first trial...')
     
     
             # main loop
