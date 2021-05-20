@@ -30,7 +30,8 @@ Class to hold all the data about the tab and its process
 
 """
 class TabbedProcess:
-    def __init__(self, key, command_string=None, kill_cmd=None, shell=False):
+    def __init__(self, key, command_string=None, kill_cmd=None, shell=False,
+                 label=None, read_only=False):
         """
         
 
@@ -56,11 +57,15 @@ class TabbedProcess:
         self.key_cmd = f'{key}.--command--'
         self.shell = shell
         self.key_console = f'{key}.--console--'
-
+        if label is None:
+            label = f'This layout has key {self.key}'
         
-        self.layout = [[sg.Text(f'This layout has key {self.key}')],
+        self.layout = [[sg.Text(label)],
                        [sg.Input(key=self.key_cmd, size=(element_width, 1),
-                                 default_text=command_string)],
+                                 default_text=command_string,
+                                 readonly=read_only,
+                                 text_color='black',
+                                 disabled_readonly_text_color='grey')],
                        [sg.Text('', key=self.key_console,
                                 size=(element_width, self.num_lines),
                                 text_color='white', background_color='black')]
