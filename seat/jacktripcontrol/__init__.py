@@ -1,2 +1,3 @@
 from .jacktripcontrol import JackTripControl
-from .gui import Gui
+from .jacktripcontrol import State
+# from .gui import Gui

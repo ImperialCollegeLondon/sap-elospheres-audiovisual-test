@@ -25,51 +25,32 @@ https://stackoverflow.com/a/35900070/3041762
 """
 
 
+
+
 """
 Class to hold all the data about the tab and its process
 
 """
-class TabbedProcess:
-    def __init__(self, key, command_string=None, kill_cmd=None, shell=False,
-                 label=None, read_only=False):
+class LoggedProcess:
+    def __init__(self, command_string=None, shell=False):
         """
         
 
         Parameters
         ----------
-        key: str
-            Title of the tab, also used to identify it
-            
         command_string : str
-            The command which will be populated in the input field and,
-            assuming it is not edited by user, executed
+            The command which will be executed
 
         Returns
         -------
         class instance
 
         """
-        self.num_lines = 30 # number of lines in the console
-        element_width = 60
-        
+        self.maximum_history = 2000 # number of lines of log to keep     
         self.proc = None
-        self.key = key    
-        self.key_cmd = f'{key}.--command--'
+        self.command_string = command_string
         self.shell = shell
-        self.key_console = f'{key}.--console--'
-        if label is None:
-            label = f'This layout has key {self.key}'
-        
-        self.layout = [[sg.Text(label)],
-                       [sg.Input(key=self.key_cmd, size=(element_width, 1),
-                                 default_text=command_string,
-                                 readonly=read_only,
-                                 text_color='black',
-                                 disabled_readonly_text_color='grey')],
-                       [sg.Text('', key=self.key_console,
-                                size=(element_width, self.num_lines),
-                                text_color='white', background_color='black')]
-                      ]
+        self.log = []
         
         
     def is_running(self):
@@ -82,11 +63,17 @@ class TabbedProcess:
         """
         if self.proc is None:
             return False
-        else:
-            return True
-  
         
-    def start(self, window):
+        if self.proc.poll() is not None:
+            # print('process seems to have finished...')
+            self.proc.stdout.close()
+            self.proc = None
+            return False
+        
+        return True
+  
+
+    def start(self):
         """
         
 
@@ -119,11 +106,16 @@ class TabbedProcess:
         
         # - split command
         #   conventional approach doesn't handle windows paths
-        #   cmd = shlex.split(window[key_cmd].get())
-        cmd = cmdline_split(window[self.key_cmd].get())
+        #   cmd = shlex.split(self.command_string)
+        cmd = cmdline_split(self.command_string)
         # print(cmd)
+
+        # clear the log
+        self.log = []
+        
+        # start the process
+        # print(f'Executing command: {cmd}')
         try:
-            # start the process
             self.proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT,
@@ -131,34 +123,26 @@ class TabbedProcess:
                                     env=my_env,
                                     shell=self.shell,
                                     bufsize=1)
-            
-            # attempt to run using pythonw as a background process
-            # this prevents console windows poping up, but can't terminate the
-            # wsl process and on windows jack doesn't even start
-            # startupinfo = subprocess.STARTUPINFO()
-            # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            # self.proc = subprocess.Popen(cmd,
-            #                         stdout=subprocess.PIPE,
-            #                         stderr=subprocess.STDOUT,
-            #                         text=True,
-            #                         env=my_env,
-            #                         shell=self.shell,
-            #                         startupinfo=startupinfo,
-            #                         bufsize=1)
-            # setup mechanism for reading output
-            self.q = Queue()
-            self.t = Thread(target=enqueue_output,
-                            args=(self.proc.stdout, self.q))
-            self.t.daemon = True # thread dies with the program
-            self.t.start()
+        except (IOError, ValueError) as err:
+            self.log = [f'Attempt to run {cmd} failed',
+                        f'{err}']
+            return
 
-           # clear the console
-            window[self.key_console].Update('')
-        except Exception as e:
-            # things could go wrong - use the gui's console display
-            # to make it more user friendly
-            print(e)
-            window[self.key_console].Update(value=repr(e))
+        self.q = Queue()
+        self.t = Thread(target=enqueue_output,
+                        args=(self.proc.stdout, self.q))
+        # self.t = Thread(target=self.update_log,
+        #                 args=(self.proc.stdout, self.log))
+        self.t.daemon = True # thread dies with the program
+        self.t.start()
+        
+        self.t_log = Thread(target=service_queue,
+                            args=(self.q, self.log))
+        self.t_log.daemon = True
+        self.t_log.start()
+
+
+
 
 
     def stop(self):
@@ -176,65 +160,82 @@ class TabbedProcess:
 
         """
         if self.is_running():
-            # print(f'{self.key}: stop before stdout.close()')
-            # self.proc.stdout.close()
-            # print(f'{self.key}: stop after stdout.close()')
             if self.proc.poll() is None:
-                # print(f'{self.key}: stop before proc.terminate()')
                 self.proc.terminate()
-                # print(f'{self.key}: stop after proc.terminate()')
                 time.sleep(0.5)
                 
             if self.proc.poll() is None:
-                # print(f'{self.key}: stop before proc.kill()')
                 self.proc.kill()
-                # print(f'{self.key}: stop after proc.kill()')
                 time.sleep(0.5)
                 
             if self.proc.poll() is None:
-                # print(f'{self.key}: stop process didnt die')
                 raise RuntimeError("Process didn't die")
 
             self.proc = None
 
 
-    def update(self, window):
+    def get_log(self):
         """
-        
-
-        Parameters
-        ----------
-        window : pysimplegui.Window
-            pass reference to the parent so that it can be updated.
 
         Returns
         -------
-        None.
+        str
+            the log as a printable string.
 
         """
-        if self.is_running():
-            if self.proc.poll() is None: 
-                # read line without blocking
-                try:  
-                    newtext = self.q.get_nowait() # or q.get(timeout=.1)
-                except Empty:
-                    pass
-                else: # got line
-                    # new text to add
-                    oldtext = window[self.key_console].get().splitlines()
-                    lines = oldtext + [newtext]
-                    lines = lines[-self.num_lines:]
-                    window[self.key_console].Update(value='\n'.join(lines))
-
-            else:
-                # process has finished - reset GUI
-                self.proc = None
-                
-    def output_contains(self, window, search_string): 
-        for line in window[self.key_console].get().splitlines():
+        # self.refresh_log()
+        # return '\n'.join(self.log)
+        return ''.join(self.log)
+            
+    def output_contains(self, search_string):
+        # self.refresh_log()
+        for line in self.log:
             if search_string in line:
                 return True
         return False
+
+
+def enqueue_output(out, queue):
+    """
+    Function for pulling output from spawned process and adding it to a queue
+    This function is run on a separate thread to avoid blocking the main thread
+    
+    Based on https://stackoverflow.com/a/4896288/3041762
+
+    """
+    try:
+        for line in iter(out.readline, b''):
+            if line != '':
+                queue.put(line)
+    # out.close()
+    except ValueError:
+        pass
+        # print('ValueError in enqueue_output suggests pipe was closed')
+        
+        
+
+def service_queue(queue, log):
+    """
+    Causes log for process to be updated
+
+    Returns
+    -------
+    None.
+
+    """
+    # read line without blocking
+    while True:
+        try:  
+            newtext = queue.get_nowait() # or q.get(timeout=.1)
+        except Empty:
+            # done = True
+            # print('Empty - done')
+            pass
+        else: # got line
+            # new text to add
+            log += [newtext]
+
+
                 
                 
 def cmdline_split(s, platform='this'):
@@ -289,19 +290,3 @@ def cmdline_split(s, platform='this'):
         args.append(accu)
 
     return args
-
-
-def enqueue_output(out, queue):
-    """
-    Function for pulling output from spawned process and adding it to a queue
-    This function is run on a separate thread to avoid blocking the main thread
-    
-    Based on https://stackoverflow.com/a/4896288/3041762
-
-    """
-    try:
-        for line in iter(out.readline, b''):
-            queue.put(line)
-    except ValueError:
-        # close the pipe raises this exception and so ends the thread
-        pass

@@ -1,6 +1,7 @@
 import argparse
 import confuse
 from datetime import datetime
+import enum
 import ipaddress
 import numpy as np
 import os
@@ -12,6 +13,7 @@ import time
 from loggedprocess import TabbedProcess
 
 
+    
 
 class Gui():
     def __init__(self, args):
@@ -30,6 +32,8 @@ class Gui():
         self.key_top_tabgroup = '--tabgroup--'
         self.key_reset_settings_button = '--reset-settings--'
         self.key_run_button = '--run--'
+        self.key_stop_button = '--stop--'
+        self.key_status_text = '--status--'
         self.key_kill_button = '--kill--'
         self.settings_map = {'jack_root': {'ui_key': 'jack_root',
                                            'label': 'Root directory for Jack',
@@ -58,36 +62,12 @@ class Gui():
         self.pr_local_jt = TabbedProcess('local jacktrip', 'cmd_local_jacktrip', read_only=True)
         self.console_tabs = [self.pr_wsl_jack, self.pr_wsl_jt,
                      self.pr_local_jack, self.pr_local_jt]
-        print('console group')
-        console_tab_group = [[sg.TabGroup([[sg.Tab(tab.key, tab.layout) for tab in self.console_tabs]])]]
-
-        main_tab_layout = [[sg.Text(text='This is the main tab. We will write something here soon')]]
-
-        settings_tab_layout = [[]]
-        for key,value in self.settings_map.items():
-            settings_tab_layout += [[sg.Text(text=value['label'])],
-                                    [sg.Input(key=value['ui_key'])]]
-        settings_tab_layout += [[sg.Button(button_text='Restore defaults',
-                                           key=self.key_reset_settings_button)]]    
-
-
-        layout = [[sg.TabGroup([[sg.Tab('Main', main_tab_layout),
-                                 sg.Tab('Settings',settings_tab_layout),
-                                 sg.Tab('Consoles',console_tab_group)]],
-                               enable_events=True, key=self.key_top_tabgroup)],
-                  [sg.Button('Start', key=self.key_run_button),
-                   sg.Button('Stop', key=self.key_kill_button)]]            
-
-        self.window = sg.Window('JackTrip Control', layout, finalize=True)
         
-
-        self.reset_settings()
-        self.update_console_commands()
-        self.reset()
+        self.state = State.DISCONNECTED
     
     def reset_settings(self):
         """ populate UI with values from config"""
-        print(self.settings_map)
+        # print(self.settings_map)
         for key, value in self.settings_map.items():
             print(value)
             self.window[value['ui_key']].update(value=value['value'])
@@ -124,19 +104,44 @@ class Gui():
         
         # these commands haven't got a ui element to store them in
         self.local_jackconnect_exe = f'{cfg["jack_root"]}/jack_connect.exe'
-        self.kill_wsl_jack = 'wsl -u root pkill -f jackd'
-        # self.kill_local_jack = 
-        
-        
-    
-    
-    def reset(self):
-        self.stopped = True
-        self.waiting = False
-        self.running = False
+        self.cmd_kill_wsl_jack = 'wsl -u root pkill -f jackd'
+        self.cmd_kill_local_jack = 'taskkill /F /IM jackd.exe /IM jacktrip.exe'
 
         
-    def monitor(self):
+    def set_state(self, state):
+        self.state = state
+        self.window[self.key_status_text].update(value=str(self.state))
+
+        
+    def show(self):
+        # must always create the layout from new
+        console_tab_group = [[sg.TabGroup([[sg.Tab(tab.key, tab.create_layout()) for tab in self.console_tabs]])]]
+        main_tab_layout = [[sg.Text(text='This is the main tab. We will write something here soon')]]
+
+        settings_tab_layout = [[]]
+        for key,value in self.settings_map.items():
+            settings_tab_layout += [[sg.Text(text=value['label'])],
+                                    [sg.Input(key=value['ui_key'])]]
+        settings_tab_layout += [[sg.Button(button_text='Restore defaults',
+                                           key=self.key_reset_settings_button)]]    
+
+
+        layout = [[sg.TabGroup([[sg.Tab('Main', main_tab_layout),
+                                 sg.Tab('Settings',settings_tab_layout),
+                                 sg.Tab('Consoles',console_tab_group)]],
+                               enable_events=True, key=self.key_top_tabgroup)],
+                  [sg.Button('Start', key=self.key_run_button),
+                   sg.Button('Stop', key=self.key_stop_button),
+                   sg.Text(key=self.key_status_text,size=(15,1),justification='center'),
+                   sg.Button('Kill', key=self.key_kill_button)]]            
+
+        # everything has been created ready to go
+        self.window = sg.Window('JackTrip Control', layout, finalize=True)
+        self.reset_settings() #TODO store settings and use restore settings
+        self.update_console_commands()
+        self.set_state(self.state) # force UI update
+
+        
         while True:             # Event Loop
             event, values = self.window.Read(timeout=50,timeout_key=self.key_timeout)
             if event is not self.key_timeout:
@@ -152,64 +157,47 @@ class Gui():
                 self.reset_settings()
             elif event == self.key_run_button:
                 # stop before we start
-                if self.waiting or self.running:
+                if self.state in [State.CONNECTED, State.STARTING]:
                     for tab in self.console_tabs:
                         if tab.is_running():
                             tab.stop()
-                    self.reset()        
+                    self.set_state(State.DISCONNECTED)        
                 
                 for tab in self.console_tabs:
                     tab.start(self.window)
-                self.stopped = False
-                self.waiting = True
+                self.set_state(State.STARTING) 
                 
-            elif event == self.key_kill_button:
+            elif event == self.key_stop_button:
                 for tab in self.console_tabs:
                     tab.stop()
-                self.reset()
+                self.set_state(State.DISCONNECTED)
+            elif event == self.key_kill_button:
+                # be brutal
+                completed_process = subprocess.run(self.cmd_kill_wsl_jack, text=True, capture_output=True)
+                completed_process = subprocess.run(self.cmd_kill_local_jack, text=True, capture_output=True)
                 
             # update display on every loop
             for tab in self.console_tabs:
                 tab.update(self.window)
 
             # update status
-            if self.waiting:
+            if self.state is State.STARTING:
                 if (self.pr_local_jt.output_contains(self.window, self.ready_string) and
                     self.pr_wsl_jt.output_contains(self.window, self.ready_string)):
 
                     # connect jacktrip to soundcard
                     self.connect_jacktrip_to_output()
-                    self.waiting = False
-                    self.running = True
-                
-                
-    def get_wsl_ip_address(self, verbose=False):
-        cmd = 'wsl hostname -I'
-        completed_process = subprocess.run(cmd, text=True, capture_output=True)
-        ip = completed_process.stdout.rstrip()
-    
-        try:
-            parsed_address = ipaddress.ip_address(ip)
-            if verbose:
-                print(f'parsed address: {str(parsed_address)}')
-        except ValueError as err:
-            print(err)
-            print(f'invalid address: {ip}')
-            raise RuntimeError('Failed to get IP address of WSL virtual machine')
-        return str(parsed_address)
+                    self.set_state(State.CONNECTED)
 
-    def connect_jacktrip_to_output(self, channels=[1,2]):
-        for channel in channels:
-            cmd = f'{self.local_jackconnect_exe} {self.ip}:receive_{channel} system:playback_{channel}'
-            completed_process = subprocess.run(cmd, text=True, capture_output=True)
-
+                
+Error gui has to change in sync with new jacktripcontrol
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d','--asio_soundcard_name', help='device name used by jack to identify the soundcard')
     args = parser.parse_args()
     thegui = Gui(args)
-    thegui.monitor()
+    thegui.show()
     
 
     

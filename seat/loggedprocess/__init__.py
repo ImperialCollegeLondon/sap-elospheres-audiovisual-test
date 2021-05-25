@@ -1,1 +1,1 @@
-from .logged_process import TabbedProcess
+from .logged_process import LoggedProcess
