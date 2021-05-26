@@ -22,6 +22,10 @@ class State(enum.Enum):
                    self.CONNECTED.value: 'Connected'}
         return strings[self.value]
 
+class ConnectMode(enum.Enum):
+    NO_CONNECT = enum.auto()
+    NON_BLOCKING = enum.auto()
+    BLOCKING = enum.auto()
 
 class JackTripControl:
     """
@@ -39,14 +43,13 @@ class JackTripControl:
         # override with supplied arguments
         if args is not None:
             self.moduleConfig.set_args(args)
-        self.ready_string = 'Received Connection from Peer!'
         self.wsl_ip = self.get_wsl_ip_address() 
         self.state = State.DISCONNECTED
 
 
     def set_state(self, state):
         self.state = state
-        print(f'State set to {self.state}')
+        # print(f'State set to {self.state}')
         
         
     def get_commands(self):
@@ -78,6 +81,9 @@ class JackTripControl:
         cmd_local_jacktrip = (f'{jacktrip_root}/jacktrip.exe -c {self.wsl_ip} ' +
                               f'--clientname {self.wsl_ip} --nojackportsconnect')
         cmd_local_kill = 'taskkill /F /IM jackd.exe /IM jacktrip.exe'
+        cmd_start_metronome = 'wsl -u root jack_metro --bpm 100'
+        cmd_connect_metronome = f'wsl -u root bash -c "jack_connect metro:100_bpm JackTrip:send_1"'        
+        cmd_stop_metronome = f'wsl -u root bash -c "jack_disconnect metro:100_bpm JackTrip:send_1; pkill -9 -f jack_metro"'
         
         # pack into a dict
         cmd_dict = {'wsl_jack': cmd_wsl_jack,
@@ -85,7 +91,10 @@ class JackTripControl:
                     'wsl_kill': cmd_wsl_kill,
                     'local_jack': cmd_local_jack,
                     'local_jacktrip': cmd_local_jacktrip,
-                    'local_kill': cmd_local_kill
+                    'local_kill': cmd_local_kill,
+                    'wsl_metro_start': cmd_start_metronome,
+                    'wsl_metro_connect': cmd_connect_metronome,
+                    'wsl_metro_stop': cmd_stop_metronome
                     }
         return cmd_dict
 
@@ -124,7 +133,7 @@ class JackTripControl:
         completed_process = subprocess.run(cmd_dict["wsl_kill"], text=True, capture_output=True)
         completed_process = subprocess.run(cmd_dict["local_kill"], text=True, capture_output=True)
                 
-    def start(self, raise_error=False, block=True, timeout=30):
+    def start(self, raise_error=False, connect_mode=ConnectMode.BLOCKING, timeout=30):
         """
         start
         Establishes
@@ -145,37 +154,45 @@ class JackTripControl:
         cmd_dict = self.get_commands()
         
         # initialise the objects
-        self.lp = dict()
-        self.lp["wsl_jack"] = loggedprocess.LoggedProcess(
-            command_string=cmd_dict["wsl_jack"])
-        self.lp["local_jack"] = loggedprocess.LoggedProcess(
+        self.lp_local = dict()
+        self.lp_wsl = dict()
+        
+        # launch jack
+        self.lp_local["local_jack"] = loggedprocess.LoggedProcess(
             command_string=cmd_dict["local_jack"])
+        self.lp_wsl["wsl_jack"] = loggedprocess.LoggedProcess(
+            command_string=cmd_dict["wsl_jack"])
+        
+        # launch jacktrip
         time.sleep(0.1)
-        self.lp["wsl_jacktrip"] = loggedprocess.LoggedProcess(
-            command_string=cmd_dict["wsl_jacktrip"])
-        self.lp["local_jacktrip"] = loggedprocess.LoggedProcess(
+        self.lp_local["local_jacktrip"] = loggedprocess.LoggedProcess(
             command_string=cmd_dict["local_jacktrip"])
+        self.lp_wsl["wsl_jacktrip"] = loggedprocess.LoggedProcess(
+            command_string=cmd_dict["wsl_jacktrip"])
+
         self.set_state(State.STARTING)
         
         # start each one
-        for proc_id, lp in self.lp.items():
+        # - concatonate dicts and iterate over items
+        for proc_id, lp in {**self.lp_local, **self.lp_wsl}.items():
             lp.start()
         
         # check they are running
-        for proc_id, lp in self.lp.items():
-            # print(lp)
+        for proc_id, lp in {**self.lp_local, **self.lp_wsl}.items():
+            # print(f'checking {lp} started...')
             if not lp.is_running():
                 self.stop()
                 raise RuntimeError(f'{proc_id} process failed to start')
         
         # start thread to connect when ready
-        self.t = threading.Thread(target=JackTripControl.connect_when_ready,
+        if connect_mode is not ConnectMode.NO_CONNECT:
+            self.t = threading.Thread(target=JackTripControl.connect_when_ready,
                                   args=(self,timeout))
-        self.t.start()
-        if block:
-            print(f'Waiting for thread')
-            self.t.join(timeout)
-            print(f'Thread joined')
+            self.t.start()
+            if connect_mode is ConnectMode.BLOCKING:
+                print(f'Waiting for JackTrip to connect')
+                self.t.join(timeout)
+                # print(f'Thread joined')
         
 
     def connect_when_ready(self, timeout):
@@ -186,50 +203,43 @@ class JackTripControl:
         while (self.state is State.STARTING) and (counter < max_sleeps):
             time.sleep(sleeptime)
             
-            if (self.lp["local_jacktrip"].output_contains(JackTripControl.ready_string)
-                and self.lp["wsl_jacktrip"].output_contains(JackTripControl.ready_string)):
+            if (self.lp_local["local_jacktrip"].output_contains(JackTripControl.ready_string)
+                and self.lp_wsl["wsl_jacktrip"].output_contains(JackTripControl.ready_string)):
                 
                 # connect jacktrip to soundcard
                 # state should be updated
                 self.connect_jacktrip_to_output()
-                print('Before break')
                 break
  
     def stop(self):
-
-        for proc_id, lp in self.lp.items():
-            print(lp)
+        # local processes can be stopped nicely using the proc object
+        for proc_id, lp in self.lp_local.items():
+            # print(lp)
             if lp.is_running():
+                # print(f'Calling .stop() on {proc_id}')
                 lp.stop()
-    # def stop(self):
-    #     # this check fails if we want to start/stop from
-    #     # separate scripts
-    #     #if self.isRunning: 
-    #         subprocess.run(["powershell.exe", KILL_REMOTE_SCRIPT],
-    #                        shell=True,check=True)
-            
-            
-    #         local_process_names = ["jackd.exe"] #only need to kill jack (jacktrip will die anyway)
+                
+        # wsl processes need to be ended explicitly
+        cmd_dict = self.get_commands()
+        completed_process = subprocess.run(cmd_dict["wsl_kill"], text=True, capture_output=True)
 
-    #         for proc in psutil.process_iter():
-    #             # check whether the process name matches
-    #             if proc.name() in local_process_names:
-    #                 proc.terminate()
+    def test_metronome_manual(self):
+        """
+        Start a metronome playing, wait for user confirmation then stop it
 
-            
+        Returns
+        -------
+        None.
 
-    #         time.sleep(1)
-    #         for proc in psutil.process_iter():
-    #             # check whether the process name matches
-    #             if proc.name() in local_process_names:
-    #                 proc.kill()
-    #         self.isRunning = False
-
-
-
-
-        
-
+        """
+        cmd_dict = self.get_commands()
+        lp = loggedprocess.LoggedProcess(command_string=cmd_dict["wsl_metro_start"])
+        lp.start()
+        time.sleep(0.1)
+        completed_process = subprocess.run(cmd_dict["wsl_metro_connect"], text=True, capture_output=True)
+        input('Confirm that the metronome is playing on the left channel (channel 1)')
+        completed_process = subprocess.run(cmd_dict["wsl_metro_stop"], text=True, capture_output=True)
+       
 
     # def disconnect(self):
     #     subprocess.run(["powershell.exe", DISCONNECT_SOUNDCARD_SCRIPT],

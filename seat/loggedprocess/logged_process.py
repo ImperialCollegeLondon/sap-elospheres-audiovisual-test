@@ -62,10 +62,11 @@ class LoggedProcess:
 
         """
         if self.proc is None:
+            # print('in process.is_running() proc is None')
             return False
         
         if self.proc.poll() is not None:
-            # print('process seems to have finished...')
+            # print('in process.is_running() .poll() is not None...process seems to have finished...')
             self.proc.stdout.close()
             self.proc = None
             return False
@@ -117,6 +118,7 @@ class LoggedProcess:
         # print(f'Executing command: {cmd}')
         try:
             self.proc = subprocess.Popen(cmd,
+                                    stdin=subprocess.DEVNULL,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT,
                                     text=True,
@@ -159,12 +161,16 @@ class LoggedProcess:
         None.
 
         """
+        # print('Entered stop()')
         if self.is_running():
+            # print('Process .is_running()=True')
             if self.proc.poll() is None:
+                # print('Process .poll()=None...calling .terminate()')
                 self.proc.terminate()
                 time.sleep(0.5)
                 
             if self.proc.poll() is None:
+                # print('Process .poll()=None...calling .kill()')
                 self.proc.kill()
                 time.sleep(0.5)
                 
