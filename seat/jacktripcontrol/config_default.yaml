@@ -1,0 +1,6 @@
+# default settings
+jack_root: 'C:/Program Files (x86)/Jack'
+jacktrip_root: 'C:\jacktrip'
+sample_rate: 48000
+buffer_size: 128
+asio_soundcard_name: 'ASIO::ASIO4ALL v2'

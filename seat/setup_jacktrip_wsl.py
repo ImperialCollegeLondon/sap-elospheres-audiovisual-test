@@ -55,12 +55,10 @@ def main():
     sets up jacktrip using only the command line/console to control timings
     """
     print('Starting jack servers on remote and local machines...')
-    print('Wait until consoles indicate that JackTrip connection has been established')
     print('This may take several seconds...')
     jtc = jacktripcontrol.JackTripControl()
-    jtc.start()
-    input("Press Enter to continue with connecting JackTrip to the local soundcard...")
-    jtc.connect()
+    jtc.start(connect_mode=jacktripcontrol.ConnectMode.BLOCKING)
+    print('Ready!')
     return
 
 

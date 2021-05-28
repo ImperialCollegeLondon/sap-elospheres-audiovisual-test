@@ -7,8 +7,9 @@ from queue import Queue, Empty
 # import shlex
 import subprocess
 import sys
-from threading  import Thread
+from threading  import Thread, Event
 import time
+import weakref
 
 """
 Extending the simple approach used in main.py, we now want to have a console
@@ -66,7 +67,7 @@ class LoggedProcess:
             return False
         
         if self.proc.poll() is not None:
-            # print('in process.is_running() .poll() is not None...process seems to have finished...')
+            print('in process.is_running() .poll() is not None...process seems to have finished...')
             self.proc.stdout.close()
             self.proc = None
             return False
@@ -131,19 +132,21 @@ class LoggedProcess:
             return
 
         self.q = Queue()
+        self.exit_event = Event()
         self.t = Thread(target=enqueue_output,
-                        args=(self.proc.stdout, self.q))
+                        args=(self.proc.stdout, self.q, self.exit_event))
         # self.t = Thread(target=self.update_log,
         #                 args=(self.proc.stdout, self.log))
-        self.t.daemon = True # thread dies with the program
+        # self.t.daemon = True # thread dies with the program
         self.t.start()
         
         self.t_log = Thread(target=service_queue,
-                            args=(self.q, self.log))
-        self.t_log.daemon = True
+                            args=(self.q, self.log, self.exit_event))
+        # self.t_log.daemon = True
         self.t_log.start()
 
-
+        # self.t_long_finalize = weakref.finalize(self.t_log, Event.set, self.exit_event)
+        # self.exit_event
 
 
 
@@ -162,6 +165,7 @@ class LoggedProcess:
 
         """
         # print('Entered stop()')
+        stopped_ok = True # assume it works
         if self.is_running():
             # print('Process .is_running()=True')
             if self.proc.poll() is None:
@@ -173,11 +177,17 @@ class LoggedProcess:
                 # print('Process .poll()=None...calling .kill()')
                 self.proc.kill()
                 time.sleep(0.5)
-                
+            
+            
             if self.proc.poll() is None:
-                raise RuntimeError("Process didn't die")
+                stopped_ok = False
 
-            self.proc = None
+        # tidy up anyway
+        self.proc = None
+        self.exit_event.set()
+        if not stopped_ok:
+            raise RuntimeError("Process didn't die")
+        
 
 
     def get_log(self):
@@ -201,7 +211,7 @@ class LoggedProcess:
         return False
 
 
-def enqueue_output(out, queue):
+def enqueue_output(out, queue, exit_event):
     """
     Function for pulling output from spawned process and adding it to a queue
     This function is run on a separate thread to avoid blocking the main thread
@@ -210,17 +220,21 @@ def enqueue_output(out, queue):
 
     """
     try:
+        # for line in iter(out.readline, b''):
+        #     if line != '':
+        #         queue.put(line)
         for line in iter(out.readline, b''):
-            if line != '':
                 queue.put(line)
     # out.close()
+        # for line in iter(out.readline, ''):
+        #     queue.put(line)    
     except ValueError:
-        pass
-        # print('ValueError in enqueue_output suggests pipe was closed')
-        
-        
+        # pass
+        print('ValueError in enqueue_output suggests pipe was closed')
+    print('end of enqueue_output reached')    
+    exit_event.set()    
 
-def service_queue(queue, log):
+def service_queue(queue, log, exit_event):
     """
     Causes log for process to be updated
 
@@ -240,8 +254,10 @@ def service_queue(queue, log):
         else: # got line
             # new text to add
             log += [newtext]
-
-
+        # combine sleep and check for exit event    
+        if exit_event.wait(0.1):
+            break
+    print('end of service_queue reached')
                 
                 
 def cmdline_split(s, platform='this'):
