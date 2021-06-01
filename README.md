@@ -44,7 +44,8 @@ Check the gui system is working. A window should pop up. No specific values need
 (seat) python -m manual_tests.test_pysimplegui
 ```
 
-Check the audio system is working. Four console windows will pop up. Identify the two that relate to JackTrip - one each for the local (Windows) and remote (WSL) sides. Once the connection is established return to the original anaconda console and press Enter to start a metronome and again to stop it.
+Check the audio system is working. Prompts will guide you. A GUI will be shown where settings can be adjusted, if required. Four console windows show the output of
+the jack/jacktrip processes. Once everything is running a metronome is used to test the audio works.
 ```
 (seat) python -m manual_tests.test_jacktrip_audio
 ```
