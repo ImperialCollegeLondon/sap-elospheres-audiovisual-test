@@ -1,19 +1,14 @@
+import argparse
 import jacktripcontrol
 
-
-def main():
-    """
-    main
-    
-    calls the main stop command
-    """
-
-    jtc = jacktripcontrol.JackTripControl()
-    jtc.stop()
-    return
+"""
+Convenience script to simply stop jacktripcontrol
+"""
 
 
 if __name__ == '__main__':
-    main()
+    # parse the command line inputs
+    jtc = jacktripcontrol.JackTripControl()
+    jtc.kill()
     
     

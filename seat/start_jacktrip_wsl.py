@@ -11,7 +11,7 @@ if __name__ == '__main__':
     parser = jacktripcontrol.JTCArgumentParser()
     args = parser.parse_args()
     jtc = jacktripcontrol.JackTripControl(args)
-    gui = jacktripcontrol.Gui(jtc)
-    gui.show()
+    jtc.start(connect_mode=jacktripcontrol.ConnectMode.BLOCKING, daemon=True)
+    print('Ready!')
     
     

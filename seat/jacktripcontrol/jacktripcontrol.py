@@ -273,7 +273,6 @@ class JackTripControl:
         
         cmd_dict = self.get_commands()
         lp = loggedprocess.LoggedProcess(command_string=start_metronome)
-        lp.start()
         time.sleep(0.1)
         completed_process = subprocess.run(connect_metronome, text=True, capture_output=True)
         input('Confirm that the metronome is playing on the left channel (channel 1)')
