@@ -40,7 +40,7 @@ class TabbedProcessView:
         window[self.key_cmd].update(value=cmd_str)
         
     def update_console(self, window, log):
-        window[self.key_console].update(value=''.join(log[-self.maximum_history:]))
+        window[self.key_console].update(value=log)
 
                                         
 class Gui:
@@ -64,9 +64,13 @@ class Gui:
         self.key_kill_button = '--kill--'
         
         # create objects to display process consoles
-        self.console_tabs = []
-        for key,val in self.jtc.lp_all.items():
-            self.console_tabs.append(TabbedProcessView(key=key))
+        # name them so that we can control the order
+        self.console_tab_keys = ['wsl_jack','wsl_jacktrip',
+                                 'local_jack','local_jacktrip']
+        self.console_tabs = [TabbedProcessView(key=key) 
+                             for key in self.console_tab_keys]
+        # for key,val in self.jtc.lp_all.items():
+        #     self.console_tabs.append(TabbedProcessView(key=key))
 
         # intialise locally stored values used to avoid writing to the gui more
         # than necessary - make empty to ensure they get updated the first time
@@ -187,18 +191,23 @@ class Gui:
     def update_process_command_strings(self):
         if self.jtc.state is jacktripcontrol.State.DISCONNECTED:
             self.update_settings_from_ui()
-            self.jtc.initialise_loggedprocesses()
             self.set_console_commands()
     
     
     def set_console_commands(self):
+        cmd_dict = self.jtc.get_commands()
         for tab in self.console_tabs:
-            tab.set_command(self.window, self.jtc.lp_all[tab.key].command_string)
+            tab.set_command(self.window, cmd_dict[tab.key]['start'])
 
     def update_console_logs(self):
-        for tab in self.console_tabs:
-            # if self.jtc.lp_all[tab.key].log is not self.prev_log[tab.key]:
-                tmp_log = self.jtc.lp_all[tab.key].log
+        if self.jtc.lp is not None:
+            # print(self.jtc.lp)
+            for tab in self.console_tabs:
+            
+                # if self.jtc.lp_all[tab.key].log is not self.prev_log[tab.key]:
+                # print(tab.key)
+                
+                tmp_log = self.jtc.lp[tab.key].get_log()
                 tab.update_console(self.window, tmp_log)
                 self.prev_log[tab.key] = tmp_log
            

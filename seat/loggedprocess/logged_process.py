@@ -1,59 +1,164 @@
-import argparse
-from datetime import datetime
-import numpy as np
 import os
-import PySimpleGUI as sg
-from queue import Queue, Empty
-# import shlex
+import pathlib
 import subprocess
 import sys
-from threading  import Thread, Event
+import tempfile
 import time
-import weakref
-
-"""
-Extending the simple approach used in main.py, we now want to have a console
-per tab.
-
-The main event loop still needs to happen at the top level. But can we wrap
-each tab as a class?
-
-
-Includes code snippets/concepts from
-https://stackoverflow.com/a/4896288/3041762
-https://stackoverflow.com/a/35900070/3041762
-
-"""
-
 
 
 
 """
-Class to hold all the data about the tab and its process
+Wrapper for subprocess.Popen to take care of writting and accessing a log file.
 
+Includes extra options to allow process to continue even after this object is
+is garbage collected
+
+Includes code snippet from https://stackoverflow.com/a/35900070/3041762 to
+split the supplied command_string
 """
 class LoggedProcess:
-    def __init__(self, command_string=None, shell=False):
+    def __init__(self, command_string=None,
+                 stop_command_string=None,
+                 logpath=None,
+                 delete_log_on_exit=None,
+                 detach_on_exit=False):
         """
-        
+        Create a subprocess using Popen
 
         Parameters
         ----------
         command_string : str
             The command which will be executed
+        stop_command_string: str
+            The command which will be executed (in addition to proc.terminate())
+            when stop() is called. This is helpful for wsl or when the called
+            process spawns its own processes.
+        logpath: str
+            specify a logfile to save the console output to
+        delete_log_on_exit: bool
+            defaults to True if logpath is None and False if logpath is given
+        detach_on_exit: bool
+            allows process to continue when object is deleted
 
         Returns
         -------
         class instance
 
         """
-        self.maximum_history = 2000 # number of lines of log to keep     
-        self.proc = None
-        self.command_string = command_string
-        self.shell = shell
-        self.log = []
+
+        if logpath is None:
+            fd, self.logpath = tempfile.mkstemp()
+            self.f = open(fd,'w')
+            self.delete_log_on_exit = True
+        else:
+            self.logpath = pathlib.Path(logpath)
+            self.f = open(self.logpath,'w')
+            self.delete_log_on_exit = False
+        # default determined above, override if specified    
+        if delete_log_on_exit is not None:
+            self.delete_log_on_exit = delete_log_on_exit
         
+        self.set_detach_on_exit(detach_on_exit)
+
         
+        # start it immediatelly
+        # - modify envionment so we get unbuffered output from pipe
+        my_env = os.environ.copy()
+        my_env["PYTHONUNBUFFERED"]='1'
+        
+        # - split command
+        #   conventional approach doesn't handle windows paths
+        #   cmd = shlex.split(self.command_string)
+        cmd = cmdline_split(command_string)
+        # print(cmd)
+        
+        self.stop_cmd = None
+        if stop_command_string is not None:
+            self.stop_cmd = cmdline_split(stop_command_string)
+
+        
+        # start the process
+        # print(f'Executing command: {cmd}')
+        try:
+            self.proc = subprocess.Popen(cmd,
+                                    stdin=subprocess.DEVNULL,
+                                    stdout=self.f,
+                                    stderr=subprocess.STDOUT,
+                                    text=True,
+                                    env=my_env,
+                                    bufsize=1)
+        except (IOError, ValueError) as err:
+            self.f.write([f'Attempt to run {cmd} failed',
+                        f'{err}'])
+
+    def set_detach_on_exit(self, detach_on_exit):
+        self.detach_on_exit = detach_on_exit
+
+        
+    def stop(self):
+        """
+        Terminates the process. If child processes have been spawned it may be
+        necessary to supply the stop_cmd argument at object intialisation
+
+        Returns
+        -------
+        None.
+
+        """
+        self.proc.terminate()
+        if self.stop_cmd is not None:
+            subprocess.call(self.stop_cmd)
+
+         
+    def get_log(self):
+        """
+        Returns the full console log - stdout and stderr are merged
+
+        Returns
+        -------
+        log : str
+            The log
+
+        """
+        with open(self.logpath) as f:
+            log = f.read()
+        return log
+
+    def output_contains(self, search_string):
+        """
+        Basic implementation which searches for the given string in the log
+
+        Parameters
+        ----------
+        search_string : str
+            The string to look for
+
+        Returns
+        -------
+        bool
+            True if string is found.
+
+        """
+        for line in self.get_log().splitlines():
+            if search_string in line:
+                return True
+        return False
+
+    def __del__(self):
+        if self.detach_on_exit:
+            if self.delete_log_on_exit:
+                print(f'Process detached...log file {self.logpath} not deleted')
+        else:
+            # print(f'Stopping process in finalizer')
+            self.stop()
+            self.f.close()
+            if self.delete_log_on_exit:
+                time.sleep(0.01)
+                try:
+                    os.remove(self.logpath)
+                except OSError as error:
+                    print(f'log file at {self.logpath} was not removed')
+            
     def is_running(self):
         """
         Returns
@@ -67,199 +172,12 @@ class LoggedProcess:
             return False
         
         if self.proc.poll() is not None:
-            print('in process.is_running() .poll() is not None...process seems to have finished...')
-            self.proc.stdout.close()
-            self.proc = None
+            # print('in process.is_running() .poll() is not None...process seems to have finished...')
+            # self.proc = None
             return False
         
         return True
-  
 
-    def start(self):
-        """
-        
-
-        Parameters
-        ----------
-        window : pysimplegui.Window
-            pass reference to the parent so that it can be interrogated.
-
-        Raises
-        ------
-        ValueError
-            If process is already running.
-
-        Returns
-        -------
-        None.
-
-        """
-        
-        if self.is_running():
-            raise ValueError('A process is already running')
-            
-    
-        
-    
-        # no process running - so start it
-        # - modify envionment so we get unbuffered output from pipe
-        my_env = os.environ.copy()
-        my_env["PYTHONUNBUFFERED"]='1'
-        
-        # - split command
-        #   conventional approach doesn't handle windows paths
-        #   cmd = shlex.split(self.command_string)
-        cmd = cmdline_split(self.command_string)
-        # print(cmd)
-
-        # clear the log
-        self.log = []
-        
-        # start the process
-        # print(f'Executing command: {cmd}')
-        try:
-            self.proc = subprocess.Popen(cmd,
-                                    stdin=subprocess.DEVNULL,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    text=True,
-                                    env=my_env,
-                                    shell=self.shell,
-                                    bufsize=1)
-        except (IOError, ValueError) as err:
-            self.log = [f'Attempt to run {cmd} failed',
-                        f'{err}']
-            return
-
-        self.q = Queue()
-        self.exit_event = Event()
-        self.t = Thread(target=enqueue_output,
-                        args=(self.proc.stdout, self.q, self.exit_event))
-        # self.t = Thread(target=self.update_log,
-        #                 args=(self.proc.stdout, self.log))
-        # self.t.daemon = True # thread dies with the program
-        self.t.start()
-        
-        self.t_log = Thread(target=service_queue,
-                            args=(self.q, self.log, self.exit_event))
-        # self.t_log.daemon = True
-        self.t_log.start()
-
-        # self.t_long_finalize = weakref.finalize(self.t_log, Event.set, self.exit_event)
-        # self.exit_event
-
-
-
-    def stop(self):
-        """
-        Ends the running process
-
-        Raises
-        ------
-        RuntimeError
-            If process fails to stop.
-
-        Returns
-        -------
-        None.
-
-        """
-        # print('Entered stop()')
-        stopped_ok = True # assume it works
-        if self.is_running():
-            # print('Process .is_running()=True')
-            if self.proc.poll() is None:
-                # print('Process .poll()=None...calling .terminate()')
-                self.proc.terminate()
-                time.sleep(0.5)
-                
-            if self.proc.poll() is None:
-                # print('Process .poll()=None...calling .kill()')
-                self.proc.kill()
-                time.sleep(0.5)
-            
-            
-            if self.proc.poll() is None:
-                stopped_ok = False
-
-        # tidy up anyway
-        self.proc = None
-        self.exit_event.set()
-        if not stopped_ok:
-            raise RuntimeError("Process didn't die")
-        
-
-
-    def get_log(self):
-        """
-
-        Returns
-        -------
-        str
-            the log as a printable string.
-
-        """
-        # self.refresh_log()
-        # return '\n'.join(self.log)
-        return ''.join(self.log)
-            
-    def output_contains(self, search_string):
-        # self.refresh_log()
-        for line in self.log:
-            if search_string in line:
-                return True
-        return False
-
-
-def enqueue_output(out, queue, exit_event):
-    """
-    Function for pulling output from spawned process and adding it to a queue
-    This function is run on a separate thread to avoid blocking the main thread
-    
-    Based on https://stackoverflow.com/a/4896288/3041762
-
-    """
-    try:
-        # for line in iter(out.readline, b''):
-        #     if line != '':
-        #         queue.put(line)
-        for line in iter(out.readline, b''):
-                queue.put(line)
-    # out.close()
-        # for line in iter(out.readline, ''):
-        #     queue.put(line)    
-    except ValueError:
-        # pass
-        print('ValueError in enqueue_output suggests pipe was closed')
-    print('end of enqueue_output reached')    
-    exit_event.set()    
-
-def service_queue(queue, log, exit_event):
-    """
-    Causes log for process to be updated
-
-    Returns
-    -------
-    None.
-
-    """
-    # read line without blocking
-    while True:
-        try:  
-            newtext = queue.get_nowait() # or q.get(timeout=.1)
-        except Empty:
-            # done = True
-            # print('Empty - done')
-            pass
-        else: # got line
-            # new text to add
-            log += [newtext]
-        # combine sleep and check for exit event    
-        if exit_event.wait(0.1):
-            break
-    print('end of service_queue reached')
-                
-                
 def cmdline_split(s, platform='this'):
     """Multi-platform variant of shlex.split() for command-line splitting.
     For use with subprocess, for argv injection etc. Using fast REGEX.
@@ -311,4 +229,4 @@ def cmdline_split(s, platform='this'):
     if accu is not None:
         args.append(accu)
 
-    return args
+    return args        
