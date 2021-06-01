@@ -5,6 +5,7 @@ import ipaddress
 import os
 import pathlib
 import subprocess
+import sys
 import threading
 import time
 
@@ -63,22 +64,51 @@ class JackTripControl:
         # for seat, we need to know the IP address. Storing it as an
         # environment variable was quite unreliable so instead store it in a
         # file pointed to by an environment variable
+        
         env_var_name ='JTC_REMOTE_IP_SETTING'
-        remote_ip_file = os.environ.get(env_var_name,'')
-        
-        if remote_ip_file == '':
-            print(f'missing environment variable: {env_var_name}')
-            remote_ip_file = pathlib.Path(self.jtc.moduleConfig.config_dir(),
-                                          'remote_ip')
-
-            os.environ.set(env_var_name, remote_ip_file)
+        # default_remote_ip_file = pathlib.Path(self.moduleConfig.config_dir(),
+        #                                   'remote_ip')
+        if env_var_name not in os.environ:
+            print(os.environ)
+            print(f'Environment variable {env_var_name} is missing.')
+            print(f'Initialising now')
+            self.init_env_variable()
+            print(f'Done. Please close the terminal (all tabs)and try again')
+            # # choose it and set env variable
+            # remote_ip_file = default_remote_ip_file
+            # # os.environ[env_var_name] = str(remote_ip_file)
+            # # os.system("setx " + str(env_var_name) + " " + str(remote_ip_file))
+            sys.exit(-1)
         else:
+            remote_ip_file = os.environ.get(env_var_name,'')
             print(f'environment variable: {env_var_name} is\n{remote_ip_file}')
-            remote_ip_file = pathlib.Path(remote_ip_file)
+            if remote_ip_file == '':
+                raise RuntimeError('Environment variable was empty')
+                # env variable exists but its not set
+                # remote_ip_file = default_remote_ip_file
+                # os.environ[env_var_name] = str(remote_ip_file)
+                # os.system("setx " + str(env_var_name) + " " + str(remote_ip_file))
         with open(remote_ip_file,'w') as f:
-                f.write(str(self.wsl_ip))
+            print(f'Writing {self.wsl_ip} to {remote_ip_file}')
+            f.write(str(self.wsl_ip))
         
 
+    def init_env_variable(self):
+        """
+        Runs powershell script to setup environment variable - native Python 
+        commands don't seem to be persistent
+
+        Returns
+        -------
+        None.
+
+        """
+        module_path = pathlib.Path(__file__).parent.absolute()
+        ps_script = pathlib.Path(module_path,'init_env.ps1')
+        cmd_str = f'powershell.exe {str(ps_script)}'
+        split_cmd = loggedprocess.cmdline_split(cmd_str)
+        completed_process = subprocess.run(split_cmd, text=True, capture_output=True)
+        
 
     def set_state(self, state):
         self.state = state
