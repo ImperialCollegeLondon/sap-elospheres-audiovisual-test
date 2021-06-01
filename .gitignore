@@ -1,5 +1,6 @@
 # Project specific
 local_unversioned_tmp_files
+*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
