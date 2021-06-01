@@ -2,6 +2,8 @@ import argparse
 import confuse
 import enum
 import ipaddress
+import os
+import pathlib
 import subprocess
 import threading
 import time
@@ -57,6 +59,24 @@ class JackTripControl:
         self.wsl_ip = self.get_wsl_ip_address()
         self.lp = None
         self.state = State.DISCONNECTED
+        
+        # for seat, we need to know the IP address. Storing it as an
+        # environment variable was quite unreliable so instead store it in a
+        # file pointed to by an environment variable
+        env_var_name ='JTC_REMOTE_IP_SETTING'
+        remote_ip_file = os.environ.get(env_var_name,'')
+        
+        if remote_ip_file == '':
+            print(f'missing environment variable: {env_var_name}')
+            remote_ip_file = pathlib.Path(self.jtc.moduleConfig.config_dir(),
+                                          'remote_ip')
+
+            os.environ.set(env_var_name, remote_ip_file)
+        else:
+            print(f'environment variable: {env_var_name} is\n{remote_ip_file}')
+            remote_ip_file = pathlib.Path(remote_ip_file)
+        with open(remote_ip_file,'w') as f:
+                f.write(str(self.wsl_ip))
         
 
 
