@@ -56,6 +56,7 @@ class Gui:
         # keys to ui elements
         self.key_timeout = '--timeout--'
         self.key_top_tabgroup = '--tabgroup--'
+        self.key_settings_tab = '--settings--'
         self.key_restore_settings_button = '--restore-settings--'
         self.key_save_settings_button = '--save-settings--'
         self.key_run_button = '--run--'
@@ -215,6 +216,10 @@ class Gui:
         if self.jtc.state is not self.prev_state:
             self.window[self.key_status_text].update(value=str(self.jtc.state))
             self.prev_state = self.jtc.state
+            if self.jtc.state is jacktripcontrol.State.DISCONNECTED:
+                self.window[self.key_settings_tab].update(disabled=False)
+            else:
+                self.window[self.key_settings_tab].update(disabled=True)
         
     def show(self):
         """
@@ -237,7 +242,7 @@ class Gui:
 
 
         layout = [[sg.TabGroup([[sg.Tab('Main', main_tab_layout),
-                                 sg.Tab('Settings',settings_tab_layout),
+                                 sg.Tab('Settings',settings_tab_layout,key=self.key_settings_tab),
                                  sg.Tab('Consoles',console_tab_group)]],
                                enable_events=True, key=self.key_top_tabgroup)],
                   [sg.Button('Start', key=self.key_run_button),
@@ -276,6 +281,9 @@ class Gui:
                 self.save_settings()
                 
             elif event == self.key_run_button:
+                # refresh values
+                self.update_process_command_strings()
+                
                 # start but don't block so UI can update
                 self.jtc.start(connect_mode=jacktripcontrol.ConnectMode.NON_BLOCKING)
                 # self.jtc.start(connect_mode=jacktripcontrol.ConnectMode.BLOCKING)

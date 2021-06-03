@@ -7,13 +7,14 @@ import PySimpleGUI as sg
 import sys
 import yaml
 
+import jacktripcontrol
 import seat
 import util
 
 
 
 # class ExperimentBlockSelector(csv_file):
-def gui(csv_file):
+def gui(csv_file, jtc):
     # read the csv file
     df = pd.read_csv(csv_file)
     print(df)
@@ -31,6 +32,7 @@ def gui(csv_file):
     key_block_combo = "-block-"
     key_config_text = "-config-"
     key_run_button = "-run-"
+    key_jtc_button = "-jtc-"
     
     # conditions as a separate thing for readability
     condition_keys = df.columns
@@ -60,7 +62,8 @@ def gui(csv_file):
     layout += [[sg.Text('Condition specification for selected block')]]
     layout += condition_display_layout
     layout += [sg.HorizontalSeparator()],
-    layout += [[sg.Button('Run', key=key_run_button, focus=True,
+    layout += [[sg.Button('JTC...',key=key_jtc_button)],
+               [sg.Button('Run', key=key_run_button, focus=True,
                               disabled=True)]]
 
     window = sg.Window('SEAT block selector', layout,
@@ -69,9 +72,16 @@ def gui(csv_file):
                                 # use_default_focus=False,
                                 finalize=True)
 
+    jtc.start(raise_error=True,
+              connect_mode=jacktripcontrol.ConnectMode.NON_BLOCKING)
+    jtc_colors = {jacktripcontrol.State.DISCONNECTED: 'red',
+                  jacktripcontrol.State.STARTING: 'orange',
+                  jacktripcontrol.State.CONNECTED: 'green'}
+
     while True:             # Event Loop
-        event, values = window.Read()
+        event, values = window.Read(timeout=50)
         # print(event, values)
+        
         
         if event == sg.WIN_CLOSED:
             window.close()
@@ -112,6 +122,9 @@ def gui(csv_file):
                 for key in condition_keys:
                     window[key].Update(value=df[key].iloc[idx].item())
                 
+        elif event == key_jtc_button:
+            gui = jacktripcontrol.Gui(jtc)
+            gui.show()            
         elif event == key_run_button:
             # prepare metadata as single row dataframe
             subject_data = dict([(key, window[key].get()) for key in meta_keys])
@@ -147,11 +160,14 @@ def gui(csv_file):
                     # tb = traceback.format_exc()
                     print(f'An error happened.  Here is the info:', e)
                     sg.popup_error(f'Something went wrong running the test!\nCheck the console for more information.', e)
+
+        # update gui
+        window[key_jtc_button].update(button_color=('black',jtc_colors[jtc.state]))
                         
 
 if __name__ == '__main__':
     # parse the command line inputs
-    parser = argparse.ArgumentParser()
+    parser = jacktripcontrol.JTCArgumentParser()
     parser.add_argument("-f", "--file",
                         help="conditions file (.csv)")
     # parser.add_argument("-o", "--out-dir",
@@ -179,5 +195,10 @@ if __name__ == '__main__':
         except FileNotFoundError:
             print('No csv file found at ' + str(file))
             sys.exit()
-            
-    gui(file)
+    
+    # remain args are for jacktripcontrol
+    del args.file   
+    jtc = jacktripcontrol.JackTripControl(args)    
+    jtc.kill()
+    gui(file, jtc) #blocks
+    jtc.stop()
