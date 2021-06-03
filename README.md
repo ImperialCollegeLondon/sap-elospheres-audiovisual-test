@@ -36,6 +36,82 @@ These all run in one go and don't require any user interaction
 (seat) python -m unittest discover unit_tests
 ```
 
+## Setup audio
+Run
+```
+(seat) python .\setup_jacktrip_wsl.py
+```
+Switch to the 'settings' tab and ensure appropriate values have been entered.
+Once satisfied, click the Start button. Switch to the console tab to inspect the
+output. The status at the bottom of the gui will change from Disconnected to
+Starting. Once the connection is established it will show 'Connected'
+
+Press the Test button to play a metronome test tone on the left channel. Note
+that the metronome is a jack-enabled executable running under WSL. Press again
+to stop the test.
+
+Assuming everything is ok, press the Stop button, return to the settings tab and
+press Save. These settings will be used by default from now on.
+
+
+### Demo tests
+These demonstrate the functionality of a perceptual test.
+
+Close any open consoles from previous tests and open a new anaconda prompt
+
+Setup the environment
+```
+(base) conda activate seat
+(seat) python .\start_jacktrip_wsl.py
+```
+Note that in this case jacktrip is left running. Once you have finished you can
+end jacktrip using
+```
+(seat) python .\stop_jacktrip_wsl.py
+```
+
+
+The first test demonstrates a signal detection task
+```
+(seat) python -m demo_tests.test_01_targettoneinnoise
+```
+
+The second test demonstrates a speech intelligibility task
+```
+python -m demo_tests.test_02_targetspeechtwomaskers
+```
+If the listeningeffortplayer app is running then the target speech video should be visible.
+
+
+
+
+## Real usage
+
+- Open the ListeningEffortPlayer app
+- Open anaconda prompt
+  - Activate the `seat` environment
+  - Run gui.py
+  - Choose the csv file which contains all the block definitions
+  - Select the block to run and add optional subject metadata
+  - Click 'Run' to start the block
+  - Experimenter selects the correctly reported keywords
+
+```
+cd C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test
+git pull
+conda env update -n seat --file seat.yml
+conda activate seat
+cd seat
+python .\gui.py
+#
+# In the background jacktripcontrol will start with the previously saved settings
+# Once the 'jtc...' button turns green and you have selected a block you can press 'Run'
+# press the 'jtc...' button to change the settings and/or restart jacktrip.
+```
+
+
+<!--
+Deprecated
 ### Manual tests
 These test basic functionality and require user interaction.
 
@@ -49,46 +125,4 @@ the jack/jacktrip processes. Once everything is running a metronome is used to t
 ```
 (seat) python -m manual_tests.test_jacktrip_audio
 ```
-
-### Demo tests
-These demonstrate the functionality of a perceptual test.
-
-Close any open consoles from previous tests and open a new anaconda prompt
-
-Setup the environment
-```
-(base) conda activate seat
-(seat) python .\setup_jacktrip_wsl.py
-```
-
-The first test demonstrates a signal detection task
-```
-(seat) python -m demo_tests.test_01_targettoneinnoise
-```
-
-The second test demonstrates a speech intelligibility task
-```
-python -m demo_tests.test_02_targetspeechtwomaskers
-```
-If the listeningeffortplayer app is running then the target speech video should be visible.
-
-## Real usage
-
-- Open the ListeningEffortPlayer app
-- Open anaconda prompt
-  - Activate the `seat` environment
-  - Run setup script for JackTrip
-  - Run seat.py with path to config file
-  - Experimenter selects the correctly reported keywords
-
-```
-cd C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test
-git pull
-conda env update -n seat --file seat.yml
-conda activate seat
-cd seat
-python .\setup_jacktrip_wsl.py
-# wait for it to start before pressing enter to continue
-# run the seat.py script, passing the path to a config.yml file, e.g.
-python seat.py -f  C:\seat_experiments\20210210_8_16_colocated_speech_audioonly\config.yml
-```
+-->

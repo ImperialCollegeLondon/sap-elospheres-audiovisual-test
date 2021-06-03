@@ -63,6 +63,7 @@ class Gui:
         self.key_stop_button = '--stop--'
         self.key_status_text = '--status--'
         self.key_kill_button = '--kill--'
+        self.key_test_button = '--test--'
         
         # create objects to display process consoles
         # name them so that we can control the order
@@ -79,6 +80,7 @@ class Gui:
         self.prev_log = {}
         for tab in self.console_tabs:
             self.prev_log[tab.key] = []
+        self.test_active = False
 
     
     def map_cfg_to_settings(self):
@@ -220,6 +222,44 @@ class Gui:
                 self.window[self.key_settings_tab].update(disabled=False)
             else:
                 self.window[self.key_settings_tab].update(disabled=True)
+
+    def update_buttons(self):
+        if self.jtc.state is jacktripcontrol.State.DISCONNECTED:
+            self.window[self.key_run_button].update(disabled=False)
+            self.window[self.key_stop_button].update(disabled=True)
+            self.window[self.key_test_button].update(disabled=True,
+                                                     button_color = sg.theme_button_color(),
+                                                     text = 'Test')
+        elif self.jtc.state is jacktripcontrol.State.STARTING:
+            self.window[self.key_run_button].update(disabled=True)
+            self.window[self.key_stop_button].update(disabled=True)
+            self.window[self.key_test_button].update(disabled=True)
+            self.window[self.key_test_button].update(disabled=True,
+                                                     button_color = sg.theme_button_color(),
+                                                     text = 'Test')
+        elif self.jtc.state is jacktripcontrol.State.CONNECTED:
+            self.window[self.key_run_button].update(disabled=True)
+            self.window[self.key_stop_button].update(disabled=False)
+            self.window[self.key_test_button].update(disabled=False)
+            if self.test_active:
+                self.window[self.key_test_button].update(text ='Test off',
+                                                         button_color=('White','Red'))
+            else:
+                self.window[self.key_test_button].update(text ='Test on',
+                                                         button_color=('White','Green'))
+        else:
+            raise RuntimeError('Unknown state')
+        
+        
+                
+        
+    def toggle_test(self):
+        if self.test_active:
+            self.jtc.metronome_off()
+            self.test_active = False
+        else:
+            self.jtc.metronome_on()
+            self.test_active = True 
         
     def show(self):
         """
@@ -248,7 +288,8 @@ class Gui:
                   [sg.Button('Start', key=self.key_run_button),
                    sg.Button('Stop', key=self.key_stop_button),
                    sg.Text(key=self.key_status_text,size=(15,1),justification='center'),
-                   sg.Button('Kill', key=self.key_kill_button)]]            
+                   sg.Button('Kill', key=self.key_kill_button),
+                   sg.Button('Test on', key=self.key_test_button)]]            
 
         # everything has been created ready to go
         self.window = sg.Window('JackTrip Control', layout, finalize=True)
@@ -289,12 +330,19 @@ class Gui:
                 # self.jtc.start(connect_mode=jacktripcontrol.ConnectMode.BLOCKING)
                 # self.jtc.start(connect_mode=jacktripcontrol.ConnectMode.NO_CONNECT)
             elif event == self.key_stop_button:
+                if self.test_active:
+                    self.toggle_test()
                 self.jtc.stop()
 
             elif event == self.key_kill_button:
+                if self.test_active:
+                    self.toggle_test()
                 self.jtc.kill()
+            
+            elif event == self.key_test_button:
+                self.toggle_test()
                 
             # update display on every loop
             self.update_state() # show the current state of jtc in the gui
             self.update_console_logs()
-            #TODO enable/disable buttons according to state
+            self.update_buttons()

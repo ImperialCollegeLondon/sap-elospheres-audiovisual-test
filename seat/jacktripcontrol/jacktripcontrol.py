@@ -155,6 +155,15 @@ class JackTripControl:
         return cmd_dict
 
 
+    def get_metronome_commands(self):
+        start_metronome = 'wsl -u root jack_metro --bpm 100'
+        connect_metronome = f'wsl -u root bash -c "jack_connect metro:100_bpm JackTrip:send_1"'
+        kill_metronome = f'wsl -u root bash -c "jack_disconnect metro:100_bpm JackTrip:send_1; pkill -9 -f jack_metro"'
+        cmd_dict = {'start': start_metronome,
+                    'connect': connect_metronome,
+                    'kill': kill_metronome}
+        return cmd_dict
+
 
     def get_wsl_ip_address(self, verbose=False):
         cmd = 'wsl hostname -I'
@@ -297,6 +306,9 @@ class JackTripControl:
         self.set_state(State.DISCONNECTED)
 
 
+
+        
+        
     def test_metronome_manual(self):
         """
         Start a metronome playing, wait for user confirmation then stop it
@@ -306,14 +318,16 @@ class JackTripControl:
         None.
 
         """
-        start_metronome = 'wsl -u root jack_metro --bpm 100'
-        connect_metronome = f'wsl -u root bash -c "jack_connect metro:100_bpm JackTrip:send_1"'
-        kill_metronome = f'wsl -u root bash -c "jack_disconnect metro:100_bpm JackTrip:send_1; pkill -9 -f jack_metro"'
-
-
-        cmd_dict = self.get_commands()
-        lp = loggedprocess.LoggedProcess(command_string=start_metronome)
-        time.sleep(0.1)
-        completed_process = subprocess.run(connect_metronome, text=True, capture_output=True)
+        self.metronome_on()
         input('Confirm that the metronome is playing on the left channel (channel 1)')
-        completed_process = subprocess.run(kill_metronome, text=True, capture_output=True)
+        self.metronome_off()
+
+    def metronome_on(self):
+        cmd_dict = self.get_metronome_commands()
+        lp = loggedprocess.LoggedProcess(command_string=cmd_dict['start'])
+        time.sleep(0.1)
+        completed_process = subprocess.run(cmd_dict['connect'], text=True, capture_output=True)
+        
+    def metronome_off(self):
+        cmd_dict = self.get_metronome_commands()
+        completed_process = subprocess.run(cmd_dict['kill'], text=True, capture_output=True)
