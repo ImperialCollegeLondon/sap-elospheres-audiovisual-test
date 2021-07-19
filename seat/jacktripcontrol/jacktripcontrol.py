@@ -79,7 +79,7 @@ class JackTripControl:
                 raise RuntimeError('Environment variable was empty')
         # - store the value
         with open(remote_ip_file,'w') as f:
-            # print(f'Writing {self.wsl_ip} to {remote_ip_file}')
+            print(f'Writing {self.wsl_ip} to {remote_ip_file}')
             f.write(str(self.wsl_ip))
 
 
