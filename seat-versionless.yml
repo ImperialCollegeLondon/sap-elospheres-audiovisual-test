@@ -1,7 +1,8 @@
 channels:
-  - anaconda
   - conda-forge
+  - anaconda
   - defaults
+  - spyder-ide
 dependencies:
   - blas
   - ca-certificates
@@ -27,7 +28,7 @@ dependencies:
   - pycparser
   - pyflakes
   - pysimplegui
-  - python=3.9
+  - python=3.8.3
   - python-dateutil
   - python_abi
   - pytz
@@ -49,5 +50,4 @@ dependencies:
   - zlib
   - pip:
     - jack-client
-    - pylsl
     - python-osc

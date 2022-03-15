@@ -1,23 +1,19 @@
-import avrenderercontrol
 import probestrategy
-import seatlog as sl
+import avrenderercontrol
 import util
+import seatlog as sl
 
-import argparse
-from datetime import datetime
-import importlib
-import numpy as np
-import pathlib
-import pandas as pd
-import pylsl
-import PySimpleGUI as sg
-import random
-import socket
 import sys
+import PySimpleGUI as sg
+import importlib
 import time
+from datetime import datetime
+import random
+import numpy as np
+import pandas as pd
 import yaml
-
-
+import pathlib
+import argparse
 
 
 def instance_builder(config):
@@ -31,7 +27,7 @@ def instance_builder(config):
     return callable_class_constructor(config["settings"])
 
 
-def run_block(config, block_id=0, subject_data=None, condition_data=None):
+def run_block(config, subject_data=None, condition_data=None):
     """Main function for executing a test
     TODO:
     The number of trials is limited by the lowest of
@@ -41,13 +37,7 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
                  responsemode?)
 
     """
-    do_send_lsl = True
-    do_debug_lsl = True
-    do_labrecorder_remote_control = True
-    labrecorder_ip_port = ("localhost", 22345) # default
-    
-    log_dir = config["App"]["log_dir"]
-    
+
 
     if (subject_data is None):
         # minimal empty data
@@ -69,63 +59,10 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
         if (subject_data.shape[0] != 1):
             raise ValueError('condition_data should have a single row')
     
-    # Define the stream properties + open outlet
-    # uid = subject_data.subject_id[0] + condition_data.
-    if do_send_lsl:
-        info = pylsl.StreamInfo(name='SeatApp',
-                                type='markers',
-                                channel_count=1,
-                                nominal_srate=pylsl.IRREGULAR_RATE,
-                                channel_format=pylsl.cf_string,
-                                source_id='seat-markers-123')
-        outlet = pylsl.StreamOutlet(info)
-    
-    # control LabRecorder
-    if do_labrecorder_remote_control:
-        try:
-            lsl_recorder_rc = socket.create_connection(labrecorder_ip_port)
-        except Exception as err:
-            print('\n\nThere was a problem establishing remote control over LabRecorder:\n' +
-                  f'IP: {labrecorder_ip_port[0]}\n' +
-                  f'port: {labrecorder_ip_port[1]}\n' + 
-                  'error message follows...\n\n')
-            raise err
-
-        # wait a bit to establish the connection
-        time.sleep(1)
-        
-        # set the xdf file path
-        if do_debug_lsl:
-            # use a hardcoded directory and timestamp for xdf path
-            template_str =  f"{pathlib.PurePath(log_dir).name}.xdf"
-            debug_dir = str(pathlib.PurePath('C:\\Users\\alastair\\Dropbox\\ELOSPHERES\\data\\20210630_lsl_development'))
-            lsl_recorder_rc.sendall(("filename " +
-                                     f"{{root:{debug_dir}}} " +           # string
-                                     f"{{template:{template_str}}} " +  # string
-                                     "\n").encode())
-        else:
-            # xdf path should correspond to the logs
-            # TODO: pass in parameters
-            template_str = 'subject_%p_block_%n_condition_%b.xdf'
-            subj_str = str(subject_data)
-            cond_str = str(condition_data)
-            
-            lsl_recorder_rc.sendall(("filename " +
-                                      f"{{root:{log_dir}}} " +           # string
-                                      f"{{template:{template_str}}} " +  # string
-                                      f"{{participant:{subj_str}}}" +    # string
-                                      f"{{task:{cond_str}}}" +           # string
-                                      f"{{run:{block_id}}}" +            # int
-                                      "\n").encode())
-    
-        time.sleep(4)
-        # lsl_recorder_rc.sendall(b"start\n")
-        # time.sleep(2)
-    
     # settings
     pre_trial_delay = (0.1, 0.2)
 
-    log_path = pathlib.Path(log_dir, 'log.csv')
+    log_path = pathlib.Path(config["App"]["log_dir"], 'log.csv')
     with sl.CSVLogger(log_path) as mylogger:
     
     
@@ -148,23 +85,11 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
             # start test
             #    - play background video
             #    - play background audio
-            if do_send_lsl:
-                outlet.push_sample(['{"event_id":"start_scene"}'])
             avrenderer.start_scene()
-            time.sleep(4)
-            
-            
-            # force update of labrecorder to make sure we have tascar's lsl stream
-            if do_labrecorder_remote_control:
-                lsl_recorder_rc.sendall(b"update\n")
-            
+    
             # wait for experimenter
-            if do_labrecorder_remote_control:
-                lr_prompt_str = 'Check LabRecorder can see all the streams and has started recording.\n'
-            else:
-                lr_prompt_str = ''
             response_mode.continue_when_ready(
-                f'Scene has started.\n{lr_prompt_str}Press Enter to start first trial...')
+                'Scene has started. Press Enter to start first trial...')
     
     
             # main loop
@@ -184,10 +109,6 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
                       + probe_strategy.get_next_probe_level_as_string())
     
                 # Prepare the renderer (behaviour depends on  implementation)
-                if do_send_lsl:
-                    outlet.push_sample([(f'{{"trial": {trial_id}, ' +
-                                         '"event_id": "set_probe_level", ' +
-                                         f'"probe_level": {str(probe_level)} }}')])
                 avrenderer.set_probe_level(probe_level)
     
                 # Show the response display UI
@@ -201,10 +122,6 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
     
                 # Present the stimulus//mixture
                 # e.g. send OSC commands to start videos/samplers
-                if do_send_lsl:
-                    outlet.push_sample([(f'{{"trial": {trial_id}, ' +
-                                         '"event_id": "present_trial", ' +
-                                         f'"stimulus_id": {str(stimulus_id)} }}')])
                 avrenderer.present_trial(stimulus_id)
     
                 # Wait for response
@@ -227,17 +144,8 @@ def run_block(config, block_id=0, subject_data=None, condition_data=None):
                                 prefix='av_')
                 mylogger.append(trial_id, response_mode.get_trial_data(),
                                 prefix='rm_')
-            
+    
             print(str(probe_strategy.get_current_estimate()))
-            
-            if do_send_lsl:
-                outlet.push_sample(['{"event_id":"done"}'])
-                time.sleep(1)
-            
-            if do_labrecorder_remote_control:
-                lsl_recorder_rc.sendall(b"stop\n")
-                time.sleep(1)
-            
             return
 
 

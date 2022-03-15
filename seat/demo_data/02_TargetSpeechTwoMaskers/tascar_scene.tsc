@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<session name="seat" duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true"  levelmeter_tc="0.001">
+<session name="seat" duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true">
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1" caliblevel="60">
 			<position>
@@ -44,9 +44,6 @@
 		</receiver>
 	</scene>
 	<modules>
-    	<pos2lsl pattern="/point_sources/out" transport="false"/>
-    	<lsljacktime />
-        <levels2osc pattern="/point_sources/out"/>
 		<system command="tascar_sampler -a 239.255.1.7 -p 9001 masker1.txt source1"/>
 		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
 		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
