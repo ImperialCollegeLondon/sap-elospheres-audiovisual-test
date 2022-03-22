@@ -61,11 +61,14 @@ def run_block(config, subject_data=None, condition_data=None):
     
     # settings
     pre_trial_delay = (0.1, 0.2)
+    
+    # state
+    test_was_cancelled = False
+
 
     log_path = pathlib.Path(config["App"]["log_dir"], 'log.csv')
     with sl.CSVLogger(log_path) as mylogger:
-    
-    
+        
         # AVRendererControl
         with instance_builder(config["AVRendererControl"]) as avrenderer:
     
@@ -131,6 +134,7 @@ def run_block(config, subject_data=None, condition_data=None):
     
                 if result is None:
                     # window was closed/cancelled - attempt to end gracefully
+                    test_was_cancelled = True
                     break
     
                 probe_strategy.store_trial_result(result)
@@ -146,6 +150,8 @@ def run_block(config, subject_data=None, condition_data=None):
                                 prefix='rm_')
     
             print(str(probe_strategy.get_current_estimate()))
+            if test_was_cancelled:
+                raise RuntimeError("The test was cancelled")
             return
 
 

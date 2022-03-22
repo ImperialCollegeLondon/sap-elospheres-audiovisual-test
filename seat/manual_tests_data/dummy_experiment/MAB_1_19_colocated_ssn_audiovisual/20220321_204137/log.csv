@@ -1,0 +1,6 @@
+row_id,subject_name,subject_age,subject_sex,subject_id,block_id,condition_id,masker_config,masker_type,target_presentation,list_start,ps_result,av_no_info,rm_correct_response
+1,,,,MAB,2,8,colocated,ssn,audioonly,10,True,,True
+2,,,,MAB,2,8,colocated,ssn,audioonly,10,True,,True
+3,,,,MAB,2,8,colocated,ssn,audioonly,10,True,,True
+4,,,,MAB,2,8,colocated,ssn,audioonly,10,True,,True
+5,,,,MAB,2,8,colocated,ssn,audioonly,10,True,,True
