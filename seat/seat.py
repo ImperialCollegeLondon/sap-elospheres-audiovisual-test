@@ -5,7 +5,6 @@ import seatlog as sl
 
 import sys
 import PySimpleGUI as sg
-import importlib
 import time
 from datetime import datetime
 import random
@@ -16,15 +15,7 @@ import pathlib
 import argparse
 
 
-def instance_builder(config):
-    """ Returns a class instance given a dict with keys
-        class: fully qualified class name
-        settings: dict of parameters which the class constructor takes
-    """
-    module_name, class_name = config["class"].rsplit(".", 1)
-    callable_class_constructor = getattr(importlib.import_module(module_name),
-                                         class_name)
-    return callable_class_constructor(config["settings"])
+
 
 
 def run_block(config, subject_data=None, condition_data=None):
@@ -71,17 +62,17 @@ def run_block(config, subject_data=None, condition_data=None):
     with sl.CSVLogger(log_path) as mylogger:
         
         # AVRendererControl
-        with instance_builder(config["AVRendererControl"]) as avrenderer:
+        with util.instance_builder(config["AVRendererControl"]) as avrenderer:
     
             # ProbeStrategy
             config["ProbeStrategy"]["settings"]["log_path"] = pathlib.Path(
                 config["App"]["log_dir"], 'probe_log.csv')
-            probe_strategy = instance_builder(config["ProbeStrategy"])
+            probe_strategy = util.instance_builder(config["ProbeStrategy"])
     
             # ResponseMode
             config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
                 config["App"]["log_dir"], 'response_log.csv')
-            response_mode = instance_builder(config["ResponseMode"])
+            response_mode = util.instance_builder(config["ResponseMode"])
             
             
             # Ready to start - opportunity for hint to experimenter/participant
