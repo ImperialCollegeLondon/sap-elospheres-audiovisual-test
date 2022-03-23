@@ -1,2 +1,3 @@
 from .speech_intelligibility import ExperimenterSelectsCorrectKeywords
 from .stub_for_tests import AlwaysCorrect
+from .stub_for_tests import FailsOnWait
