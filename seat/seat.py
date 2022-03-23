@@ -37,7 +37,8 @@ def run_block(config, subject_data=None, condition_data=None):
                  responsemode?)
 
     """
-
+    if "App" not in config:
+        raise RuntimeError("The config supplied to run_block did not have an App entry")
 
     if (subject_data is None):
         # minimal empty data
@@ -81,14 +82,21 @@ def run_block(config, subject_data=None, condition_data=None):
             config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
                 config["App"]["log_dir"], 'response_log.csv')
             response_mode = instance_builder(config["ResponseMode"])
-    
+            
+            
+            # Ready to start - opportunity for hint to experimenter/participant
+            # (depends on the ResponseMode)
+            if ("pre_block_hint" in config["App"]) and config["App"]["pre_block_hint"]:
+                response_mode.continue_when_ready(config["App"]["pre_block_hint"])
+            
+            
             # TODO: ensure compatibility of probe_strategy, response_mode and
             #       avrenderer
     
             # start test
             #    - play background video
             #    - play background audio
-            avrenderer.start_scene()
+            avrenderer.start_scene()         
     
             # wait for experimenter
             response_mode.continue_when_ready(
@@ -152,6 +160,10 @@ def run_block(config, subject_data=None, condition_data=None):
             print(str(probe_strategy.get_current_estimate()))
             if test_was_cancelled:
                 raise RuntimeError("The test was cancelled")
+            
+            if ("post_block_hint" in config["App"]) and config["App"]["post_block_hint"]:
+                response_mode.continue_when_ready(config["App"]["post_block_hint"])    
+                
             return
 
 

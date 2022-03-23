@@ -150,29 +150,34 @@ class ExperimentBlockSelector():
                 
                 config_file = pathlib.Path(self.window[self.key_config_text].get())
                 # print(config_file)
-                datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
-                out_dir = pathlib.Path(config_file.parent, datestr)
-            
-                # by now we should have a value for out_dir
-                try:
-                    out_dir.mkdir(parents=True, exist_ok=False)
-                except FileExistsError:
-                    print(f'Output directory {out_dir} already exists.')
-                    break
-            
+                
                 with open(config_file, 'r') as f:
                     block_config = yaml.safe_load(f)
-                    if ("App" in block_config):
-                        raise NotImplementedError("Deal with App.log_dir")
+                    if ("App" in block_config) and \
+                        ("log_dir" in block_config["App"]) and \
+                        block_config["App"]["log_dir"]:
+                            out_dir = pathlib(block_config["App"]["log_dir"])
                     else:
-                        block_config["App"] = {"log_dir": str(out_dir)}
+                        datestr = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        out_dir = pathlib.Path(config_file.parent, datestr)
+                        if ("App" in block_config):
+                            block_config["App"]["log_dir"] = str(out_dir)
+                        else:
+                            block_config["App"] = {"log_dir": str(out_dir)}
+                    
+                    # by now we should have a value for out_dir
+                    try:
+                        out_dir.mkdir(parents=True, exist_ok=False)
+                    except FileExistsError:
+                        print(f'Output directory {out_dir} already exists.')
+                        break
                     
                     try:
                         seat.run_block(block_config, subject_data=subject_data,
                                        condition_data = condition_data)
                         block_success = True               
                     except Exception as e:
-                        traceback.format_exc()
+                        print(traceback.format_exc())
                         # tb = e.format_exc()
                         block_success = False
                         print(f'An error happened.  Here is the info:', e)

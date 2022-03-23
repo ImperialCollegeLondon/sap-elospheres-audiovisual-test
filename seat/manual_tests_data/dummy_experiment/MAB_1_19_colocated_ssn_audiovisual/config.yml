@@ -1,3 +1,6 @@
+App:
+   pre_block_hint: This cue for the target is delivered by carrier pigeon
+   post_block_hint: That's it. The block is finished.
 AVRendererControl:
   class: avrenderercontrol.stub_for_tests.Dummy
   settings:
