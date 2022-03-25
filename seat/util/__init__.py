@@ -2,6 +2,7 @@ import errno
 import importlib
 import ipaddress
 import os
+import subprocess
 
 
 def check_path_is_file(pathlib_path):

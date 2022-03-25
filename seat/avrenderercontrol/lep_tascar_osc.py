@@ -39,7 +39,7 @@ def convert_windows_path_to_wsl(pathlib_win_path):
 def read_and_validate_paths(file_path):
     """
     Read a text file containing a list of paths and check that each one exists
-    
+
     Returns a list of paths
     """
     file_path = pathlib.Path(file_path)
@@ -50,14 +50,14 @@ def read_and_validate_paths(file_path):
             util.check_path_is_file(this_path)
             list_of_paths.append(this_path)
     return list_of_paths
-    
+
 
 class SourceInterface:
 
     def __init__(self, config):
         self.video_id = config["video_id"]
         self.video_client = config["video_client"]
-        
+
         self.sampler_client = config["sampler_client"]
         self.tascar_client = config["tascar_client"]
         self.tascar_source_address = config["tascar_source_address"]
@@ -103,13 +103,13 @@ class SourceInterface:
     def set_position(self, position):
         """
         Takes a dict of values and deals with sending messages to the appropriate clients.
-        
+
         Rely on the calling class to figure out what these should be. Either mathematically
         or directly from the config file. For simplicity we assume each value is a single scalar which can be cast to the appropriate format
         key, values:
-        
+
         numpy array of np.float32 values specifying x,y,z co-ordinates in metres
-        
+
         tascar:
             x:
             y:
@@ -122,8 +122,8 @@ class SourceInterface:
             quad_y_euler:
             quad_x_scale:
             quad_y_scale:
-        
-        
+
+
         # unity we only care about the angle
         # Euler angles can represent a three dimensional rotation by
         # performing three separate rotations around individual axes.
@@ -137,19 +137,21 @@ class SourceInterface:
         # so we can interpret
         # rot_X as elevation (90-inclination)
         # rot_Y as azimuth
-        
+
         """
+        print(position)
         # collate the required information
         # - tascar part
         t = position['tascar']
-        xyz = [t.x, t.y, t.z]
+        print(t)
+        xyz = [t["x"], t["y"], t["z"]]
         # - unity part
         # u = position['unity']
 #         arg = [self.video_id,
 #                u.X_deg, u.Y_deg, u.Z_deg,
 #                u.quad_x_euler, u.quad_y_euler,
 #                u.quad_x_scale, u.quad_y_scale]
-        
+
         # send the messages
         msg_address = self.tascar_source_address + '/pos'
         self.tascar_client.send_message(msg_address, xyz)
@@ -188,21 +190,27 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         self.tascar_client = udp_client.SimpleUDPClient(
             self.tascar_cli.ip_address,
             self.tascar_cli.osc_port)
-            
+
         for src_name in self.src:
+            # this works on MacLocal but not WSL
+            # self.src[src_name]["sampler_client"] = udp_client.SimpleUDPClient(
+            #     self.src[src_name]["sampler_ip_address"],
+            #     self.src[src_name]["sampler_osc_port"])
+
+            # this works on WSL
             self.src[src_name]["sampler_client"] = udp_client.SimpleUDPClient(
-                self.src[src_name]["sampler_ip_address"],
+                self.tascar_cli.ip_address,
                 self.src[src_name]["sampler_osc_port"])
 
-
         # tell unity where to send the head rotation data
-        self.video_client.send_message("/set_client_address", 
+        self.video_client.send_message("/set_client_address",
             [ self.tascar_cli.ip_address, self.tascar_cli.osc_port ])
 
         # set the camera rig rotation so that front direction is correct
         # EulerX, EulerY, EulerZ in Unity's left handed, z is depth coordinates
         # self.video_client.send_message("/set_orientation", [0., 90., 0.])
         # self.video_client.send_message("/set_orientation", [0., 0., 0.])
+        # self.video_client.send_message("/set_orientation", [0., 180., 0.])
 
     def close_osc(self):
         # this isn't really necessary but avoids warnings in unittest
@@ -219,9 +227,9 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         Basic implementation - subclasses may need to override
         """
         if self.state == avrc.AVRCState.READY_TO_START:
-            
+
             self.tascar_cli.start()
-            
+
             # TODO: abstract the sending of messages for the background
             # one shot for the background
             self.video_client.send_message(
@@ -261,18 +269,18 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def load_config(self, config):
         # TODO: validate, validate, validate !!!
-        
-        # instantiate the required type of tascar_cli 
+
+        # instantiate the required type of tascar_cli
         self.tascar_cli = util.instance_builder(config["TascarCommandLineInterface"])
-        
+
         # skybox
         self.skybox_path = pathlib.Path(config["skybox_path"])
         util.check_path_is_file(self.skybox_path)
 
         # delay between cue and target
         self.cue_duration = config["cue_duration"]
-        
-        
+
+
         self.target_names = config["target_names"]
         self.masker_names = config["masker_names"]
 
@@ -282,39 +290,39 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
             # check that src_name is defined as either a masker or target - error if not xor
             if not ((src_name in self.target_names) ^ (src_name in self.masker_names)):
                 raise ValueError("Configuration for AVRendererControl must assign each source to be either masker or target")
-            
+
             self.src[src_name] = {}
-            
-            # "present_video" field is used as we may have a video_paths file but choose not to use it. 
+
+            # "present_video" field is used as we may have a video_paths file but choose not to use it.
             if not config["sources"][src_name]["present_video"]:
                 self.src[src_name]["video_paths"] = None
             else:
                 self.src[src_name]["video_paths"] = read_and_validate_paths(config["sources"][src_name]["video_paths_file"])
-        
-            
+
+
             if not config["sources"][src_name]["present_cue_video"]:
                 self.src[src_name]["cue_video_paths"] = None
             else:
                 self.src[src_name]["cue_video_paths"] = read_and_validate_paths(config["sources"][src_name]["cue_videos_paths_file"])
-        
+
             # locations are stored as one per line
-            if "locations" in config["sources"][src_name]:
+            if "locations_file" in config["sources"][src_name]:
                 with open(config["sources"][src_name]["locations_file"]) as f:
                     self.src[src_name]["locations"] = [line.strip() for line in f]
             else:
                 self.src[src_name]["locations"] = None
-            
+
             # remaining properties are copied in exactly
             for prop_name in ["tascar_scene", "tascar_source",
                               "sampler_ip_address","sampler_osc_port",
                               "video_id"]:
                 self.src[src_name][prop_name] = config["sources"][src_name][prop_name]
-         
-        
-        
-        
+
+
+
+
         self.locations = config["named_locations"]
-        # TODO: validation of properties        
+        # TODO: validation of properties
 
 
         # if we get to here we assume the configuration was successful
@@ -351,7 +359,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                     "tascar_source_address": f'/{self.src[src_name]["tascar_scene"]}/{self.src[src_name]["tascar_source"]}'
                 }
                 self.src[src_name]["interface"] = SourceInterface( si_config )
-                
+
             # save state
             self.state = avrc.AVRCState.READY_TO_START
         else:
@@ -362,7 +370,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         print('Entered start_scene in child class')
         super().start_scene()
         time.sleep(5)
-        
+
         # previously set directions of all sources here but should be unnecessary
 
 
@@ -373,51 +381,53 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         """
         self.target_linear_gain = np.power(10.0, (probe_level/20.0))
 
+    def get_position_from_location(self, location):
+        return self.locations[location]
+
     def present_trial(self, stimulus_id):
         # print('Entered present_trial() with stimulus: ' + str(stimulus_id))
 
         # set directions of all sources
         for src_name in self.src:
             if self.src[src_name]["locations"] is not None:
+                # print(f'setting postion of {src_name}')
                 location = self.src[src_name]["locations"][stimulus_id]
                 position = self.get_position_from_location(location)
-                self.src[src_name].interface.set_position(position)
-        
+                self.src[src_name]["interface"].set_position(position)
+
         # present any cues (only videos for now, but could add audio too)
         for src_name in self.src:
             if self.src[src_name]["cue_video_paths"] is not None:
                 msg_contents = [
-                    self.src[src_name].video_id,
+                    self.src[src_name]["video_id"],
                     str(self.src[src_name]["cue_video_paths"][stimulus_id])]
                 self.video_client.send_message("/video/play", msg_contents)
-        
-        
+
+
         # pause
         time.sleep(self.cue_duration)
-        
-        
+
+
         # present stimuli - all videos then all audio
         for src_name in self.src:
             if self.src[src_name]["video_paths"] is not None:
                 msg_contents = [
-                    self.src[src_name].video_id,
+                    self.src[src_name]["video_id"],
                     str(self.src[src_name]["video_paths"][stimulus_id])]
                 self.video_client.send_message("/video/play", msg_contents)
-        
+
         # - audio after a short pause to get lip sync right
         time.sleep(0.15)
-        
+
         # loop over maskers and target(s) separately to allow for different gains
         for src_name in self.masker_names:
             msg_address = f'/{self.src[src_name]["tascar_source"]}/{stimulus_id+1}/add'
             msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
             print(msg_address)
             self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)
-        
+
         for src_name in self.target_names:
             msg_address = f'/{self.src[src_name]["tascar_source"]}/{stimulus_id+1}/add'
             msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
             print(msg_address)
-            self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)    
-        
-
+            self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)

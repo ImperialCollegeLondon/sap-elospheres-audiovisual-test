@@ -1,19 +1,20 @@
 from abc import ABC, abstractmethod
+import confuse
 import os
 import pathlib
-import util
 import stat
 import subprocess
 import time
 
+import util
 # TODO: Implementations are very similar - scope to avoid repetition
 
 class TascarCli(ABC):
     """
     Abstract base class to define the interface
-    
+
     scene_path is the .tsc file
-    
+
     ipaddress can be set at intialisation  is read-only
     """
     def __init__(self, config):
@@ -21,42 +22,42 @@ class TascarCli(ABC):
         self.tascar_pid_as_str = ''
         self._ip_address = '127.0.0.1'
         self.osc_port = 9877
-        
+
 
     @abstractmethod
     def start(self):
         """
         Launches the tascar_cli with already supplied scene
-        
+
         Raises exception if it doesn't work
         """
         pass
 
-    @abstractmethod        
+    @abstractmethod
     def stop(self):
         """
         Terminate the tascar_cli process
         """
         pass
-        
+
     """
-    To protect ipaddress define it as a property  
+    To protect ipaddress define it as a property
     """
     @property
     def ip_address(self):
         """The ipaddress to use for communicating with TASCAR using OSC"""
         return self._ip_address
 
-           
-        
-class MacLocal(TascarCli):  
+
+
+class MacLocal(TascarCli):
     def __init__(self, config):
         super().__init__(config)
-    
+
     def start(self):
         pathlib_path = pathlib.Path(self.scene_path)
         util.check_path_is_file(pathlib_path)
-        
+
         cli_command = f'tascar_cli {str(pathlib_path)}'
         print(cli_command)
         self.tascar_process = subprocess.Popen(cli_command, shell=True)
@@ -68,7 +69,7 @@ class MacLocal(TascarCli):
 #             f.write(f"#!/bin/sh\n{cli_command}\n")
 #             os.chmod(sh_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
 #         self.tascar_process = subprocess.Popen(['/usr/bin/open', '-n', '-a', 'Terminal', sh_file], shell=False)
-        
+
 
         # give tascar a chance to start
         time.sleep(0.3)
@@ -110,8 +111,8 @@ class MacLocal(TascarCli):
             # nothing to be done but exit gracefully
             print('couldn''t get pid of tascar_cli')
             raise RuntimeError("probably tascar_cli failed to start")
-            
-            
+
+
     def stop(self):
         # end tascar_cli process directly using linux kill
         # this avoids audio glitches
@@ -127,14 +128,32 @@ class MacLocal(TascarCli):
 class WSL(TascarCli):
     def __init__(self, config):
         super().__init__(config)
-        raise NotImplementedError("We need to deal with obtaining the IP address")
-        self.ip_address = ''  
-    
+
+        app_name = 'tascar_cli_wsl'
+        self.moduleConfig = confuse.Configuration(app_name, __name__)
+        tascar_ipaddress = self.moduleConfig['tascar']['ipaddress'].get(str)
+        print('config tascar.ipaddress:' + tascar_ipaddress)
+        if not util.is_valid_ipaddress(tascar_ipaddress):
+            env_variable_name = self.moduleConfig['tascar']['ipenvvariable'] \
+                .get(str)
+            filename = os.environ.get(env_variable_name)
+            print('Reading tascar IP address from ' + filename)
+            with open(filename, "r") as myfile:
+                tascar_ipaddress = myfile.readline().strip()
+            print('env {}: {}'.format(env_variable_name, tascar_ipaddress))
+            if not util.is_valid_ipaddress(tascar_ipaddress):
+                # failed to get a valid ipaddress
+                print(tascar_ipaddress)
+                raise ValueError
+            # store it
+            self._ip_address = tascar_ipaddress
+
+
     def start(self):
         pathlib_path = pathlib.Path(self.scene_path)
         util.check_path_is_file(pathlib_path) # windows path
         wsl_path = util.convert_windows_path_to_wsl(pathlib_path)
-        
+
         cli_command = 'wsl ' \
             + '-u root bash -c \"/usr/bin/tascar_cli ' \
             + str(wsl_path) \
@@ -181,8 +200,8 @@ class WSL(TascarCli):
             # nothing to be done but exit gracefully
             print('couldn''t get pid of tascar_cli')
             raise RuntimeError("probably tascar_cli failed to start")
-            
-            
+
+
     def stop(self):
         # end tascar_cli process directly using linux kill
         # this avoids audio glitches
@@ -192,4 +211,4 @@ class WSL(TascarCli):
 
         # make sure it really has finished
         if self.tascar_process.poll() is None:
-            self.tascar_process.terminate()            
+            self.tascar_process.terminate()
