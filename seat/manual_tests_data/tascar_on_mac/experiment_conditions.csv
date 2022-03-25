@@ -1,0 +1,4 @@
+subject_id,block_id,condition_id,masker_config,masker_type,target_presentation,list_start
+MAB,1,4,colocated,ssn,audiovisual,19
+MAB,2,8,colocated,ssn,audioonly,10
+MAB,3,5,spaced,speech,audioonly,13

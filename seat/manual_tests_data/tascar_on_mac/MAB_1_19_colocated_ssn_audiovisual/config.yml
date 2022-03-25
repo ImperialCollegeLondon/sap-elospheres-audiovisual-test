@@ -1,0 +1,40 @@
+App:
+   pre_block_hint: This cue for the target is delivered by carrier pigeon
+   post_block_hint: That's it. The block is finished.
+AVRendererControl:
+  class: avrenderercontrol.osc_tascar.TargetSpeechTwoMaskers
+  settings:
+    TascarCommandInterface:
+       class: avrenderercontrol.tascar_cli.MacLocal
+       settings:
+          tascar_scene_path: tascar_scene.tsc
+    pre_target_delay: 0.0
+    present_target_video: true
+    skybox_path: skybox.mp4
+    target_video_list_path: target_video.txt
+    target_position:
+    - 2.0
+    - 0.0
+    - 0.0
+    masker1_position:
+    - 2.0
+    - 0.0
+    - 0.0
+    masker2_position:
+    - 2.0
+    - 0.0
+    - 0.0
+ProbeStrategy:
+  class: probestrategy.fixed_probe_level.FixedProbeLevel
+  settings:
+    initial_probe_level: -3.0
+    max_num_trials: 5.0
+    log_path: [
+      ]
+ResponseMode:
+  class: responsemode.stub_for_tests.AlwaysCorrect
+  settings:
+    # keywords_path: C:\seat_experiments\demo\MAB_1_19_colocated_ssn_audiovisual/keywords.txt
+    log_path: [
+      ]
+    # wait_interval: 7.0
