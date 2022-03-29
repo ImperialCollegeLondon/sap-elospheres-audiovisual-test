@@ -50,111 +50,114 @@ def run_block(config, subject_data=None, condition_data=None):
             raise TypeError('condition_data should be a DataFrame')
         if (subject_data.shape[0] != 1):
             raise ValueError('condition_data should have a single row')
-    
+
     # settings
     pre_trial_delay = (0.1, 0.2)
-    
+
     # state
     test_was_cancelled = False
 
 
     log_path = pathlib.Path(config["App"]["log_dir"], 'log.csv')
     with sl.CSVLogger(log_path) as mylogger:
-        
+
         # AVRendererControl
         with util.instance_builder(config["AVRendererControl"]) as avrenderer:
-    
+
             # ProbeStrategy
             config["ProbeStrategy"]["settings"]["log_path"] = pathlib.Path(
                 config["App"]["log_dir"], 'probe_log.csv')
             probe_strategy = util.instance_builder(config["ProbeStrategy"])
-    
+
             # ResponseMode
             config["ResponseMode"]["settings"]["log_path"] = pathlib.Path(
                 config["App"]["log_dir"], 'response_log.csv')
             response_mode = util.instance_builder(config["ResponseMode"])
-            
-            
+
+
             # Ready to start - opportunity for hint to experimenter/participant
             # (depends on the ResponseMode)
             if ("pre_block_hint" in config["App"]) and config["App"]["pre_block_hint"]:
                 response_mode.continue_when_ready(config["App"]["pre_block_hint"])
-            
-            
+
+
             # TODO: ensure compatibility of probe_strategy, response_mode and
             #       avrenderer
-    
+
             # start test
             #    - play background video
             #    - play background audio
-            avrenderer.start_scene()         
-    
+            avrenderer.start_scene()
+
+            # opportunity to show, e.g. face of the target talker
+            avrenderer.present_preparatory_content()
+
             # wait for experimenter
             response_mode.continue_when_ready(
                 'Scene has started. Press Enter to start first trial...')
-    
-    
+
+
             # main loop
             trial_id = 0  # 1-based counter is incremented at start of loop
             while not probe_strategy.is_finished():
-    
+
                 trial_id += 1
-                
+
                 # Get required parameters
                 stimulus_id = probe_strategy.get_next_stimulus_id()
                 probe_level = probe_strategy.get_next_probe_level()
-    
+
                 # console feedback
                 print('Presenting trial...')
                 print('stimulus_id: ' + str(stimulus_id))
                 print('probe_level:'
                       + probe_strategy.get_next_probe_level_as_string())
-    
+
                 # Prepare the renderer (behaviour depends on  implementation)
                 avrenderer.set_probe_level(probe_level)
-    
+
                 # Show the response display UI
                 response_mode.show_prompt(stimulus_id)
-    
+
                 # Pause
                 # (random duration between preTrialDelay[0] and preTrialDelay[1])
                 time.sleep(pre_trial_delay[0]
                            + ((pre_trial_delay[1]-pre_trial_delay[0])
                               * random.random()))
-    
+
                 # Present the stimulus//mixture
                 # e.g. send OSC commands to start videos/samplers
                 avrenderer.present_trial(stimulus_id)
-    
+
                 # Wait for response
                 # - result type depends on the response mode
                 # - ProbeStrategy and ResponseMode must be chosen to be compatible
                 result = response_mode.wait()
-    
+
                 if result is None:
                     # window was closed/cancelled - attempt to end gracefully
                     test_was_cancelled = True
                     break
-    
+
                 probe_strategy.store_trial_result(result)
-    
+
                 # Trial is finished. Collect and push log data
                 mylogger.append(trial_id, subject_data)
                 mylogger.append(trial_id, condition_data)
-                mylogger.append(trial_id, probe_strategy.get_trial_data(), 
+                mylogger.append(trial_id, probe_strategy.get_trial_data(),
                                 prefix='ps_')
                 mylogger.append(trial_id, avrenderer.get_trial_data(),
                                 prefix='av_')
                 mylogger.append(trial_id, response_mode.get_trial_data(),
                                 prefix='rm_')
-    
+
             print(str(probe_strategy.get_current_estimate()))
             if test_was_cancelled:
                 raise RuntimeError("The test was cancelled")
-            
+
             if ("post_block_hint" in config["App"]) and config["App"]["post_block_hint"]:
-                response_mode.continue_when_ready(config["App"]["post_block_hint"])    
-                
+                response_mode.continue_when_ready(config["App"]["post_block_hint"])
+
             return
 
 

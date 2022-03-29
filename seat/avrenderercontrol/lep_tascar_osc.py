@@ -6,6 +6,7 @@ import ipaddress
 import numpy as np
 import os
 import pathlib
+import pprint
 from pythonosc import udp_client
 import subprocess
 import sys
@@ -146,18 +147,20 @@ class SourceInterface:
         print(t)
         xyz = [t["x"], t["y"], t["z"]]
         # - unity part
-        # u = position['unity']
-#         arg = [self.video_id,
-#                u.X_deg, u.Y_deg, u.Z_deg,
-#                u.quad_x_euler, u.quad_y_euler,
-#                u.quad_x_scale, u.quad_y_scale]
+        u = position['unity']
+        print(u)
+        arg = [self.video_id,
+               u["rot_X_deg"], u["rot_Y_deg"], u["rot_Z_deg"],
+               u["quad_x_euler"], u["quad_y_euler"],
+               u["quad_x_scale"], u["quad_y_scale"]]
 
         # send the messages
         msg_address = self.tascar_source_address + '/pos'
         self.tascar_client.send_message(msg_address, xyz)
-        print('Setting source postion OSC:' + msg_address + ' ' + str(xyz))
+        print('Setting source postion in tascar OSC:' + msg_address + ' ' + str(xyz))
 
-        # self.video_client.send_message("/video/position", arg)
+        self.video_client.send_message("/video/position", arg)
+        print(f'Setting source postion in unity OSC : {arg}')
 
 
 class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
@@ -243,7 +246,9 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             raise RuntimeError("Cannot start scene before it has been setup")
 
     def stop_scene(self):
+        print('Called stop_scene()')
         if self.state is avrc.AVRCState.ACTIVE:
+            print('State is ACTIVE - calling tascar_cli.stop()')
             self.tascar_cli.stop()
             self.state = avrc.AVRCState.TERMINATED
 
@@ -318,12 +323,17 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                               "video_id"]:
                 self.src[src_name][prop_name] = config["sources"][src_name][prop_name]
 
-
-
-
         self.locations = config["named_locations"]
-        # TODO: validation of properties
 
+        # deal with optiional preparatory_video
+        if "preparatory_video" in config:
+            self.prep_video_config = config["preparatory_video"]
+        else:
+            self.prep_video_config = None
+
+
+        # TODO: validation of properties
+        pprint.pprint(self)
 
         # if we get to here we assume the configuration was successful
         self.state = avrc.AVRCState.CONFIGURED
@@ -369,7 +379,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
     def start_scene(self):
         print('Entered start_scene in child class')
         super().start_scene()
-        time.sleep(5)
+        time.sleep(1)
 
         # previously set directions of all sources here but should be unnecessary
 
@@ -431,3 +441,32 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
             msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
             print(msg_address)
             self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)
+
+    def present_preparatory_content(self):
+        """
+        One-shot method called after start_scene.
+
+        Any arguments should have been set in advance during load_config()
+
+        N.B. Audio is not yet supported
+        """
+        # assume we know stuff here
+        # TODO: put this into config parsing
+        if self.prep_video_config is None:
+            pass
+        else:
+            src_name = self.prep_video_config["source"] # 'target'
+            location = self.prep_video_config["location"] # 'middle'
+            prep_video_path = self.prep_video_config["path"]
+            duration = self.prep_video_config["duration"]
+
+            position = self.get_position_from_location(location)
+            self.src[src_name]["interface"].set_position(position)
+            time.sleep(0.1) # give TASCAR time to update position
+
+            msg_contents = [
+                self.src[src_name]["video_id"],
+                prep_video_path]
+            self.video_client.send_message("/video/play", msg_contents)
+
+            time.sleep(duration)

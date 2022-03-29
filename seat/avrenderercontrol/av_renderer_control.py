@@ -62,11 +62,16 @@ class AVRendererControl(ABC):
         """Trigger trial using stimulus given by stimulus_id (0-based)"""
         pass
 
+    def present_preparatory_content(self):
+        """
+        Opportunity to show source content after scene starts before first trial
+        """
+        pass
 
     def get_trial_data(self):
         """
         Get data describing the latest trial (e.g. for writing to log)
-        
+
         Child classes should override this but functional, non-informative
         implementation given here to speed up development
         Returns
@@ -75,4 +80,3 @@ class AVRendererControl(ABC):
             single row
         """
         return DataFrame([['']], columns=['no_info'])
-    

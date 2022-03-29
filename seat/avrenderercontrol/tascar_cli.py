@@ -205,9 +205,14 @@ class WSL(TascarCli):
     def stop(self):
         # end tascar_cli process directly using linux kill
         # this avoids audio glitches
-        cli_command = f'kill {self.tascar_pid_as_str}'
+        # end tascar_cli process directly using linux kill
+        # this avoids audio glitches
+        cli_command = 'wsl ' \
+            + '-u root bash -c \"kill ' \
+            + self.tascar_pid_as_str \
+            + '\"'
         # print(cli_command)
-        subprocess.run(cli_command, shell=True)
+        subprocess.run(cli_command)
 
         # make sure it really has finished
         if self.tascar_process.poll() is None:
