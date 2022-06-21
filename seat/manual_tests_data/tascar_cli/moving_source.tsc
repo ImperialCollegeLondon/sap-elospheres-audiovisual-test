@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<session name="demo" attribution="Alastair H Moore" loop="true" duration="8" playonload="true">
+	<scene name="main" guiscale="8">
+		<source name="src">
+			<position >
+				0      2    0  0
+        2      2   10  0
+        6      2  -10  0
+        8      2    0  0
+			</position>
+			<sound>
+				<plugins>
+					<pink level="90" fmax="16000"/>
+			</plugins>
+			</sound>
+		</source>
+		<receiver name="out" type="hrtf">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+	<connect src="render.main:out_l" dest="system:playback_1" />
+	<connect src="render.main:out_r" dest="system:playback_2" />
+</session>
