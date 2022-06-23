@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<session name="seat" duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true">
+<session name="seat" duration="600" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="false">
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1" caliblevel="60">
 			<position>
@@ -48,6 +48,12 @@
 		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
 		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
+		<lsljacktime sendwhilestopped="false"/>
+		<datalogging headless="false">
+			<lsl predicate="name='TASCARtime'" />
+			<oscs path="/seat_marker" />
+			<oscs path="/dummy" />
+		</datalogging>
   </modules>
 
 	<!-- connect all files/samples from each sampler to their respective source -->
