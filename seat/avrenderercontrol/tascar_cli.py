@@ -59,6 +59,7 @@ class MacLocal(TascarCli):
         util.check_path_is_file(pathlib_path)
 
         cli_command = f'tascar_cli {str(pathlib_path)}'
+        # cli_command = f'tascar {str(pathlib_path)}' # for debugging purposes, we can show the gui
         print(cli_command)
         self.tascar_process = subprocess.Popen(cli_command, shell=True)
 

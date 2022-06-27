@@ -49,10 +49,11 @@
 		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
 		<lsljacktime sendwhilestopped="false"/>
-		<datalogging headless="false">
+		<levels2osc pattern="/point_sources/*" />
+		<datalogging headless="true">
 			<lsl predicate="name='TASCARtime'" />
+			<lsl predicate="type='level'" />
 			<oscs path="/seat_marker" />
-			<oscs path="/dummy" />
 		</datalogging>
   </modules>
 
