@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <session name="seat" duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true">
 	<scene name="point_sources" guiscale="6" >
-		<source name="source1" caliblevel="60">
+		<source name="source1">
 			<position>
 				0  0 1 0
 		 </position>
@@ -10,7 +10,7 @@
 				</plugins>
 			</sound>
 		</source>
-		<source name="source2" caliblevel="60">
+		<source name="source2">
 			<position>
 				0  1 0 0
 		 </position>
@@ -19,7 +19,7 @@
 				</plugins>
 			</sound>
 		</source>
-		<source name="source3" caliblevel="60">
+		<source name="source3">
 			<position>
 				0  0 -1 0
 		 </position>
