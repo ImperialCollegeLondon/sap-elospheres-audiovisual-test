@@ -62,14 +62,13 @@
 	<connect src="source2.*" dest="render.point_sources:source2.0.0" />
 	<connect src="source3.*" dest="render.point_sources:source3.0.0" />
 
-	<!-- connect front microphones to soundcard so we can audition the scene-->
-	<!--
-		<connect src="render.*:out_l" dest="system:playback_1" />
-		<connect src="render.*:out_r" dest="system:playback_2" />
-	-->
-	<!-- connect front microphones to soundcard so we can audition the scene-->
+	<!-- connect binaural output to soundcard to audition the scene on Mac/Linux-->
 	<connect src="render.*:out_l" dest="system:playback_1" />
 	<connect src="render.*:out_r" dest="system:playback_2" />
+
+	<!-- connect  binaural output to JackTrip to audition the scene on WSL-->
+	<!-- <connect src="render.*:out_l" dest="JackTrip:send_1" />
+	<connect src="render.*:out_r" dest="JackTrip:send_2" /> -->
 
 	<!-- connect outputs to jack-record -->
 	<connect src="render.*:out_l" dest="jack-record-*:in_1" />
