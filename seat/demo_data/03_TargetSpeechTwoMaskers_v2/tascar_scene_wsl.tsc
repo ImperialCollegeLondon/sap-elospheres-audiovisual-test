@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<session name="seat" duration="600" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="false">
+	<scene name="point_sources" guiscale="6" >
+		<source name="source1">
+			<position>
+				0  0 1 0
+		 </position>
+			<sound>
+				<plugins>
+				</plugins>
+			</sound>
+		</source>
+		<source name="source2">
+			<position>
+				0  1 0 0
+		 </position>
+			<sound>
+				<plugins>
+				</plugins>
+			</sound>
+		</source>
+		<source name="source3">
+			<position>
+				0  0 -1 0
+		 </position>
+			<sound>
+				<plugins>
+				</plugins>
+			</sound>
+		</source>
+		<receiver name="out" type="hrtf" gain="-10">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+	<scene name="background_noise" guiscale="6" >
+		<source name="pink">
+			<position>0 -2 0 0</position>
+			<sound><plugins>
+					<pink level="65" fmax="16000"/>
+			</plugins></sound>
+		</source>
+		<receiver name="out" type="hrtf" gain="-10">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+	<modules>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9001 masker1.txt source1"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
+		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
+		<lsljacktime sendwhilestopped="false"/>
+		<levels2osc pattern="/point_sources/*" />
+		<datalogging headless="true">
+			<lsl predicate="name='TASCARtime'" />
+			<lsl predicate="type='level'" />
+			<oscs path="/seat_marker" />
+		</datalogging>
+  </modules>
+
+	<!-- connect all files/samples from each sampler to their respective source -->
+	<connect src="source1.*" dest="render.point_sources:source1.0.0" />
+	<connect src="source2.*" dest="render.point_sources:source2.0.0" />
+	<connect src="source3.*" dest="render.point_sources:source3.0.0" />
+
+	<!-- connect binaural output to soundcard to audition the scene on Mac/Linux-->
+	<!-- <connect src="render.*:out_l" dest="system:playback_1" />
+	<connect src="render.*:out_r" dest="system:playback_2" /> -->
+
+	<!-- connect  binaural output to JackTrip to audition the scene on WSL-->
+	<connect src="render.*:out_l" dest="JackTrip:send_1" />
+	<connect src="render.*:out_r" dest="JackTrip:send_2" />
+
+	<!-- connect outputs to jack-record -->
+	<connect src="render.*:out_l" dest="jack-record-*:in_1" />
+	<connect src="render.*:out_r" dest="jack-record-*:in_2" />
+
+</session>

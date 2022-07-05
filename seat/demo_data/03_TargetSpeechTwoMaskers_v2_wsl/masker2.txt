@@ -1,3 +1,0 @@
-/mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/03_TargetSpeechTwoMaskers_v2_wsl/masker2/01_F02.wav
-/mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/03_TargetSpeechTwoMaskers_v2_wsl/masker2/02_F06.wav
-/mnt/c/gitwin/ImperialCollegeLondon/sap-elospheres-audiovisual-test/seat/demo_data/03_TargetSpeechTwoMaskers_v2_wsl/masker2/03_F11.wav

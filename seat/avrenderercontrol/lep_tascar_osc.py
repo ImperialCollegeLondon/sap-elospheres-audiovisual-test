@@ -234,7 +234,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.tascar_cli.start()
 
             # TODO: abstract the sending of messages for the background
-            
+
             # one shot for the background
             self.video_client.send_message(
                 "/video/play", [0, str(self.skybox_path)])
@@ -245,14 +245,14 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             time.sleep(0.1)
             print(f'outputdir: {str(self.datalogging_dir)}')
             self.tascar_client.send_message("/session_outputdir", str(self.datalogging_dir)) # expects raw string
-            
+
             self.tascar_client.send_message("/session_start", [])
              #with default datalogging options /session_start also does the folling two commands
             # self.tascar_client.send_message("/transport/locate", [0.0])
             # self.tascar_client.send_message("/transport/start", [])
             self.tascar_client.send_message("/seat_marker",['{"event_id":"start_scene"}'])
             # self.tascar_client.send_message("/seat_marker",['start_scene with brackets'])
-            
+
             self.state = avrc.AVRCState.ACTIVE
         else:
             # TODO: Can we automate progressing through states rather than just
@@ -263,11 +263,11 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         print('Called stop_scene()')
         self.tascar_client.send_message("/seat_marker",['{"event_id":"stop_scene"}'])
         # self.tascar_client.send_message("/seat_marker",'stop_scene without brackets')
-        
+
         self.tascar_client.send_message("/session_stop",[])
- 
+
         self.tascar_client.send_message("/tascargui/quit", []) # this seems to exit the samplers nicely as well - may not need the below --vvv--
-        
+
         if self.state is avrc.AVRCState.ACTIVE:
             print('State is ACTIVE - calling tascar_cli.stop()')
             self.tascar_cli.stop()
@@ -300,7 +300,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         self.tascar_cli = util.instance_builder(config["TascarCommandLineInterface"])
 
         # datalogging
-        self.datalogging_dir = pathlib.Path(config["datalogging_dir"])
+        self.datalogging_dir = pathlib.PurePosixPath(config["datalogging_dir"])
         
         # skybox
         self.skybox_path = pathlib.Path(config["skybox_path"])
@@ -414,7 +414,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         This is interpreted as the relative gain to be applied to the target
         """
         self.target_linear_gain = np.power(10.0, (probe_level/20.0))
-        
+
 
     def get_position_from_location(self, location):
         return self.locations[location]
@@ -456,7 +456,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         # - audio after a short pause to get lip sync right
         time.sleep(0.15)
 
-        
+
         # self.tascar_client.send_message("/seat_marker",'{"event_id":"present_stimulus", ' +
         #                                                '"stimulus_id": ' +
         #                                                f'{str(stimulus_id)}' + '}')

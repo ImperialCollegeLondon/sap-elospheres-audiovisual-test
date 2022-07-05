@@ -7,7 +7,7 @@ if __name__ == '__main__':
     this_directory = pathlib.Path(__file__).parent.absolute()
     parent_directory = this_directory.parent
     data_root_dir = pathlib.Path(
-        parent_directory, "demo_data", "03_TargetSpeechTwoMaskers_v2_wsl")
+        parent_directory, "demo_data", "03_TargetSpeechTwoMaskers_v2")
     tmp_dir = pathlib.Path(parent_directory,
                            "local_unversioned_tmp_files",
                            datetime.now().strftime("%Y%m%d_%H%M%S"))
@@ -23,7 +23,7 @@ if __name__ == '__main__':
                 "TascarCommandLineInterface": {
                     "class": 'avrenderercontrol.tascar_cli.WSL',
                     "settings": {
-                        "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene.tsc'))
+                        "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_wsl.tsc'))
                     },
                 },
                 "datalogging_dir": str(util.convert_windows_path_to_wsl(tmp_dir)),
