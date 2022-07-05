@@ -1,31 +1,43 @@
 <?xml version="1.0"?>
-<session name="seat" duration="600" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="false">
+<session duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true">
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1">
 			<position>
-				0  0 1 0
+				0  0 0 0
 		 </position>
-			<sound>
-				<plugins>
-				</plugins>
-			</sound>
+		<sound>
+			<plugins>
+			</plugins>
+		</sound>
 		</source>
 		<source name="source2">
 			<position>
-				0  1 0 0
+				0  0 0 0
 		 </position>
-			<sound>
-				<plugins>
-				</plugins>
-			</sound>
+		<sound>
+			<plugins>
+			</plugins>
+		</sound>
 		</source>
 		<source name="source3">
 			<position>
-				0  0 -1 0
+				0  0 0 0
 		 </position>
+		<sound>
+		</sound>
+		</source>
+		<source name="source4">
+			<position>
+				0  0 0 0
+			</position>
 			<sound>
-				<plugins>
-				</plugins>
+			</sound>
+		</source>
+		<source name="source5">
+			<position>
+				0  0 0 0
+			</position>
+			<sound>
 			</sound>
 		</source>
 		<receiver name="out" type="hrtf" gain="-10">
@@ -44,32 +56,28 @@
 		</receiver>
 	</scene>
 	<modules>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9001 masker1.txt source1"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9001 av_masker1.txt source1"/>
 		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9005 av_masker2.txt source3"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9007 ao_masker1.txt source4"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9009 ao_masker2.txt source5" sleep="2.0"/>
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
-		<lsljacktime sendwhilestopped="false"/>
-		<levels2osc pattern="/point_sources/*" />
-		<datalogging headless="true">
-			<lsl predicate="name='TASCARtime'" />
-			<lsl predicate="type='level'" />
-			<oscs path="/seat_marker" />
-		</datalogging>
   </modules>
 
 	<!-- connect all files/samples from each sampler to their respective source -->
 	<connect src="source1.*" dest="render.point_sources:source1.0.0" />
 	<connect src="source2.*" dest="render.point_sources:source2.0.0" />
 	<connect src="source3.*" dest="render.point_sources:source3.0.0" />
+	<connect src="source4.*" dest="render.point_sources:source4.0.0" />
+	<connect src="source5.*" dest="render.point_sources:source5.0.0" />
 
-	<!-- connect front microphones to soundcard so we can audition the scene-->
-	<!--
-		<connect src="render.*:out_l" dest="system:playback_1" />
-		<connect src="render.*:out_r" dest="system:playback_2" />
-	-->
-	<!-- connect front microphones to soundcard so we can audition the scene-->
+	<!-- connect binaural output to soundcard to audition the scene on Mac/Linux-->
 	<connect src="render.*:out_l" dest="system:playback_1" />
 	<connect src="render.*:out_r" dest="system:playback_2" />
+
+	<!-- connect  binaural output to JackTrip to audition the scene on WSL-->
+	<!-- <connect src="render.*:out_l" dest="JackTrip:send_1" />
+	<connect src="render.*:out_r" dest="JackTrip:send_2" /> -->
 
 	<!-- connect outputs to jack-record -->
 	<connect src="render.*:out_l" dest="jack-record-*:in_1" />
