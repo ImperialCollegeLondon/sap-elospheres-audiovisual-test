@@ -1,0 +1,7 @@
+target.txt eol=lf
+masker1.txt eol=lf
+masker2.txt eol=lf
+ao_masker1.txt eol=lf
+ao_masker2.txt eol=lf
+av_masker1.txt eol=lf
+av_masker2.txt eol=lf

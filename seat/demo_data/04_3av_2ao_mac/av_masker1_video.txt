@@ -1,3 +1,0 @@
-C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test\seat\demo_data\04_3av_2ao_mac\av_masker1/01_T4_matrix1605.webm
-C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test\seat\demo_data\04_3av_2ao_mac\av_masker1/02_T1_matrix0507.webm
-C:\gitwin\ImperialCollegeLondon\sap-elospheres-audiovisual-test\seat\demo_data\04_3av_2ao_mac\av_masker1/03_T4_matrix1704.webm
