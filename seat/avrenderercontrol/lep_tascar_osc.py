@@ -301,7 +301,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
         # datalogging
         self.datalogging_dir = pathlib.PurePosixPath(config["datalogging_dir"])
-        
+
         # skybox
         self.skybox_path = pathlib.Path(config["skybox_path"])
         util.check_path_is_file(self.skybox_path)
@@ -457,9 +457,9 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         time.sleep(0.15)
 
 
-        # self.tascar_client.send_message("/seat_marker",'{"event_id":"present_stimulus", ' +
-        #                                                '"stimulus_id": ' +
-        #                                                f'{str(stimulus_id)}' + '}')
+        self.tascar_client.send_message("/seat_marker",['{"event_id":"present_stimulus", ' +
+                                                       '"stimulus_id": ' +
+                                                       f'{str(stimulus_id)}' + '}'])
 
         # loop over maskers and target(s) separately to allow for different gains
         for src_name in self.masker_names:
