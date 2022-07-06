@@ -50,6 +50,7 @@
 		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2" />
 		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" />
 		<sleep sleep="2.0" />
+		<rotator mode="2" t0="5" t1="15" phi0="-45" phi1="45" actor="/*/out"/>
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
 		<lsljacktime sendwhilestopped="false"/>
 		<levels2osc pattern="/point_sources/*" />
