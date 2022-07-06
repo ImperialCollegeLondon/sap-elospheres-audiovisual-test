@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
-<session name="seat" duration="600" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="false">
+<session attribution="Alastair H Moore" license="CC BY-SA 3.0"
+	duration="60" loop="true"
+	levelmeter_tc="0.001" >
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1">
 			<position>
-				0  0 1 0
+				0  0 0 0
 		 </position>
 			<sound>
 				<plugins>
@@ -12,7 +14,7 @@
 		</source>
 		<source name="source2">
 			<position>
-				0  1 0 0
+				0  0 0 0
 		 </position>
 			<sound>
 				<plugins>
@@ -21,7 +23,7 @@
 		</source>
 		<source name="source3">
 			<position>
-				0  0 -1 0
+				0  0 0 0
 		 </position>
 			<sound>
 				<plugins>
@@ -44,15 +46,23 @@
 		</receiver>
 	</scene>
 	<modules>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9001 masker1.txt source1"/>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
-		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" sleep="0.5"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9001 masker1.txt source1" />
+		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2" />
+		<system command="tascar_sampler -a 239.255.1.7 -p 9005 masker2.txt source3" />
+		<sleep sleep="2.0" />
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
 		<lsljacktime sendwhilestopped="false"/>
 		<levels2osc pattern="/point_sources/*" />
+		<pos2lsl pattern="/point_sources/out" transport="false"/>
+		<sleep sleep="2.0" />
 		<datalogging headless="true">
 			<lsl predicate="name='TASCARtime'" />
 			<lsl predicate="type='level'" />
+			<lsl predicate="type='position'" />
+			<!-- <lsl predicate="type=position'" /> -->
+			<!-- <lsl predicate="name='source1' type=position'" />
+			<lsl predicate="name='source2' type=position'" />
+			<lsl predicate="name='source3' type=position'" /> -->
 			<oscs path="/seat_marker" />
 		</datalogging>
   </modules>
