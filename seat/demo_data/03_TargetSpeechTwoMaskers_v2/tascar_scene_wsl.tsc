@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<session name="seat" duration="600" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="false">
+<session attribution="Alastair H Moore" license="CC BY-SA 3.0"
+	duration="60" loop="true"
+	levelmeter_tc="0.001" >
 	<scene name="point_sources" guiscale="6" >
 		<source name="source1">
 			<position>
@@ -50,9 +52,15 @@
 		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
 		<lsljacktime sendwhilestopped="false"/>
 		<levels2osc pattern="/point_sources/*" />
+		<pos2lsl pattern="/point_sources/out" transport="false"/>
 		<datalogging headless="true">
 			<lsl predicate="name='TASCARtime'" />
 			<lsl predicate="type='level'" />
+			<lsl predicate="type='position'" />
+			<!-- <lsl predicate="type=position'" /> -->
+			<!-- <lsl predicate="name='source1' type=position'" />
+			<lsl predicate="name='source2' type=position'" />
+			<lsl predicate="name='source3' type=position'" /> -->
 			<oscs path="/seat_marker" />
 		</datalogging>
   </modules>
