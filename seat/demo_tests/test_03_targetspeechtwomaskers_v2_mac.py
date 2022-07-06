@@ -32,13 +32,13 @@ if __name__ == '__main__':
                 "named_locations": {
                     "left": {
                         "tascar": {
-                            "x": 1.7321,
-                            "y": 1.0,
-                            "z": 0.0
+                            "x": -1.1634517053048947,
+                            "y": 1.6185061721918559,
+                            "z":  0.1636
                         },
                         "unity": {
-                            "rot_X_deg": 0.0,
-                            "rot_Y_deg": 0.0,
+                            "rot_X_deg": 4.692,
+                            "rot_Y_deg": -125.71,
                             "rot_Z_deg": 0.0,
                             "quad_x_euler": 0.0,
                             "quad_y_euler": 0.0,
@@ -48,13 +48,13 @@ if __name__ == '__main__':
                     },
                     "middle": {
                         "tascar": {
-                            "x": 2.0,
-                            "y": 0.0,
-                            "z": 0.0
+                            "x": 0.1491,
+                            "y": 1.9877,
+                            "z": 0.1636
                         },
                         "unity": {
-                            "rot_X_deg": 0.0,
-                            "rot_Y_deg": 0.0,
+                            "rot_X_deg": 4.692,
+                            "rot_Y_deg": -85.71,
                             "rot_Z_deg": 0.0,
                             "quad_x_euler": 0.0,
                             "quad_y_euler": 0.0,
@@ -64,13 +64,13 @@ if __name__ == '__main__':
                     },
                     "right": {
                         "tascar": {
-                            "x": 1.7321,
-                            "y": -1.0,
-                            "z": 0.0
+                            "x": 1.39,
+                            "y": 1.4268,
+                            "z": 0.1636
                         },
                         "unity": {
-                            "rot_X_deg": 0.0,
-                            "rot_Y_deg": 0.0,
+                            "rot_X_deg": 4.692,
+                            "rot_Y_deg": -45.71,
                             "rot_Z_deg": 0.0,
                             "quad_x_euler": 0.0,
                             "quad_y_euler": 0.0,
