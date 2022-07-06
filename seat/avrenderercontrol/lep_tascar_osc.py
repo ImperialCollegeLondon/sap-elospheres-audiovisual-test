@@ -233,6 +233,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
 
             self.tascar_cli.start()
 
+            time.sleep(10.0) #allow time for lsl stuff to happen
             # TODO: abstract the sending of messages for the background
 
             # one shot for the background
@@ -265,7 +266,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         # self.tascar_client.send_message("/seat_marker",'stop_scene without brackets')
 
         self.tascar_client.send_message("/session_stop",[])
-
+        time.sleep(0.1) # need to give tascar time to close the datalogging file
         self.tascar_client.send_message("/tascargui/quit", []) # this seems to exit the samplers nicely as well - may not need the below --vvv--
 
         if self.state is avrc.AVRCState.ACTIVE:
