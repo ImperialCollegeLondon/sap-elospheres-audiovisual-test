@@ -140,15 +140,15 @@ class SourceInterface:
         # rot_Y as azimuth
 
         """
-        print(position)
+        # print(position)
         # collate the required information
         # - tascar part
         t = position['tascar']
-        print(t)
+        # print(t)
         xyz = [t["x"], t["y"], t["z"]]
         # - unity part
         u = position['unity']
-        print(u)
+        # print(u)
         arg = [self.video_id,
                u["rot_X_deg"], u["rot_Y_deg"], u["rot_Z_deg"],
                u["quad_x_euler"], u["quad_y_euler"],
@@ -157,10 +157,10 @@ class SourceInterface:
         # send the messages
         msg_address = self.tascar_source_address + '/pos'
         self.tascar_client.send_message(msg_address, xyz)
-        print('Setting source postion in tascar OSC:' + msg_address + ' ' + str(xyz))
+        # print('Setting source postion in tascar OSC:' + msg_address + ' ' + str(xyz))
 
         self.video_client.send_message("/video/position", arg)
-        print(f'Setting source postion in unity OSC : {arg}')
+        # print(f'Setting source postion in unity OSC : {arg}')
 
 
 class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
@@ -266,7 +266,15 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         # self.tascar_client.send_message("/seat_marker",'stop_scene without brackets')
 
         self.tascar_client.send_message("/session_stop",[])
-        time.sleep(0.1) # need to give tascar time to close the datalogging file
+        time.sleep(1) # need to give tascar time to close the datalogging file
+
+        # safely terminate the samplers
+        for src_name in self.src:
+            msg_address = f'/{self.src[src_name]["tascar_source"]}/quit'
+            msg_contents = []  # loop_count, linear_gain
+            print(msg_address)
+            self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)
+
         self.tascar_client.send_message("/tascargui/quit", []) # this seems to exit the samplers nicely as well - may not need the below --vvv--
 
         if self.state is avrc.AVRCState.ACTIVE:
@@ -358,7 +366,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
 
         # TODO: validation of properties
-        pprint.pprint(self)
+        # pprint.pprint(self)
 
         # if we get to here we assume the configuration was successful
         self.state = avrc.AVRCState.CONFIGURED
@@ -368,7 +376,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def setup(self):
         """Inherited public interface for setup"""
-        print('Entered setup()')
+        # print('Entered setup()')
         if self.state == avrc.AVRCState.CONFIGURED:
             try:
                 self.setup_osc()
@@ -385,7 +393,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
             # create interface to each source for controlling position
             for src_name in self.src:
-                print(self.src[src_name])
+                # print(self.src[src_name])
                 si_config = {
                     "video_id": self.src[src_name]["video_id"],
                     "video_client": self.video_client,
@@ -402,7 +410,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                                'configured')
 
     def start_scene(self):
-        print('Entered start_scene in child class')
+        # print('Entered start_scene in child class')
         super().start_scene()
         time.sleep(1)
 
@@ -466,13 +474,13 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         for src_name in self.masker_names:
             msg_address = f'/{self.src[src_name]["tascar_source"]}/{stimulus_id+1}/add'
             msg_contents = [1, self.masker_linear_gain]  # loop_count, linear_gain
-            print(msg_address)
+            # print(msg_address)
             self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)
 
         for src_name in self.target_names:
             msg_address = f'/{self.src[src_name]["tascar_source"]}/{stimulus_id+1}/add'
             msg_contents = [1, self.target_linear_gain]  # loop_count, linear_gain
-            print(msg_address)
+            # print(msg_address)
             self.src[src_name]["sampler_client"].send_message(msg_address, msg_contents)
 
     def present_preparatory_content(self):
