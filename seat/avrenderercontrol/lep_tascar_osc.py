@@ -244,8 +244,8 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             time.sleep(1)
             self.tascar_client.send_message("/background_noise/pink/mute",[0])
             time.sleep(0.1)
-            print(f'outputdir: {str(self.datalogging_dir)}')
-            self.tascar_client.send_message("/session_outputdir", str(self.datalogging_dir)) # expects raw string
+            # print(f'outputdir: {str(self.datalogging_dir)}')
+            # self.tascar_client.send_message("/session_outputdir", str(self.datalogging_dir)) # expects raw string
 
             self.tascar_client.send_message("/session_start", [])
              #with default datalogging options /session_start also does the folling two commands
@@ -309,7 +309,8 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
         self.tascar_cli = util.instance_builder(config["TascarCommandLineInterface"])
 
         # datalogging
-        self.datalogging_dir = pathlib.PurePosixPath(config["datalogging_dir"])
+        # self.datalogging_dir = pathlib.PurePosixPath(config["datalogging_dir"])
+        # print(f'AVRendererControl: datalogging_dir: {self.datalogging_dir}')
 
         # skybox
         self.skybox_path = pathlib.Path(config["skybox_path"])

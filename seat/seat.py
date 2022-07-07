@@ -62,6 +62,9 @@ def run_block(config, subject_data=None, condition_data=None):
     with sl.CSVLogger(log_path) as mylogger:
 
         # AVRendererControl
+        # if "datalogging_dir" not in config["AVRendererControl"]["settings"]:
+        #     print(f'Using default dir for datalogging_dir {config["App"]["log_dir"]}')
+        #     config["AVRendererControl"]["settings"]["datalogging_dir"] = config["App"]["log_dir"]
         with util.instance_builder(config["AVRendererControl"]) as avrenderer:
 
             # ProbeStrategy
