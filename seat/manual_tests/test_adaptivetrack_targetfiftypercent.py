@@ -26,6 +26,7 @@ if __name__ == '__main__':
         "log_path": str(pathlib.Path(tmp_dir, 'probe_log.csv'))
     }
     probe_strategy = probestrategy.TargetFiftyPercent(config)
+    probe_strategy.setup() # only required if "initial_probe_level": None
 
     while not probe_strategy.is_finished():
         probe_level = probe_strategy.get_next_probe_level()

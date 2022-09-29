@@ -15,6 +15,12 @@ class FixedProbeLevel(ProbeStrategy):
         self.storedResults = []
         self.next_stimulus_id = 0
 
+    def setup(self, ui="gui"):
+        if self.level is None:
+            self.level = self.prompt_for_user_input(
+                prompt='Enter the probe level [dB] as a float:',
+                ui='gui', input_type=float)
+
     def store_trial_result(self, result):
         # print(result)
         self.storedResults.append(result)

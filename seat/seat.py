@@ -77,6 +77,9 @@ def run_block(config, subject_data=None, condition_data=None):
                 config["App"]["log_dir"], 'response_log.csv')
             response_mode = util.instance_builder(config["ResponseMode"])
 
+            # Everything is created - opportunity to do any additional setup
+            probe_strategy.setup()
+
 
             # Ready to start - opportunity for hint to experimenter/participant
             # (depends on the ResponseMode)

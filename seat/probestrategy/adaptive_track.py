@@ -73,7 +73,15 @@ class AdaptiveTrack(ProbeStrategy, ABC):
              'trial_mean': pd.Series([], dtype='float')})
         self.trial_counter = 0
         self.stimulus_id = 0
+        
+        self.probe_level = config["initial_probe_level"]
 
+
+    def setup(self, ui="gui"):
+        if self.probe_level is None:
+            self.probe_level = self.prompt_for_user_input(
+                prompt='Enter the initial probe level [dB] as a float:',
+                ui='gui', input_type=float)
 
     def prepare_next_probe(self):
         num_correct = self.results_df.iloc[-1]["num_correct"]
@@ -234,7 +242,6 @@ class TargetEightyPercent(AdaptiveTrack):
         """
         super().__init__(config)
 
-        self.probe_level = config["initial_probe_level"]
         self.target_level = 0.8
         self.change_vector = [4, 3, 2, 1, 0, -1]
         self.step_size = 1.5
@@ -250,7 +257,6 @@ class TargetTwentyPercent(AdaptiveTrack):
         """
         super().__init__(config)
 
-        self.probe_level = config["initial_probe_level"]
         self.target_level = 0.2
         self.change_vector = [1, 0, -1, -2, -3, -4]
         self.step_size = 1.5
@@ -266,7 +272,6 @@ class TargetFiftyPercent(AdaptiveTrack):
         """
         super().__init__(config)
 
-        self.probe_level = config["initial_probe_level"]
         self.target_level = 0.5
         self.change_vector = [3, 2, 1, -1, -2, -3]
         self.step_size = 1.5
@@ -286,7 +291,6 @@ class DualTargetTwentyEightyPercent(AdaptiveTrack):
         super().__init__(config)
         self.max_run_per_track = 3
 
-        self.probe_level = config["initial_probe_level"]
         self.target_level_list = [0.2, 0.8]
         self.change_vector = [[1, 0, -1, -2, -3, -4],  # 20% target
                               [4, 3,  2,  1,  0, -1]]  # 80% target

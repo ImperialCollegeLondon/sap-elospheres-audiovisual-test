@@ -178,7 +178,8 @@ if __name__ == '__main__':
         "ProbeStrategy": {
             "class": "probestrategy.adaptive_track.TargetFiftyPercent",
             "settings": {
-                "initial_probe_level": -6,
+                # "initial_probe_level": -6,
+                "initial_probe_level": None,
                 "max_num_trials": 3,
             }
         },
