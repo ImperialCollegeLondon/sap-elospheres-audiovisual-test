@@ -25,6 +25,7 @@ if __name__ == '__main__':
                         "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_native.tsc'))
                     },
                 },
+                "datalogging_dir": str(tmp_dir),
                 "skybox_path":
                     str(pathlib.Path(data_root_dir, 'skybox.mp4')),
                 "named_locations": {
