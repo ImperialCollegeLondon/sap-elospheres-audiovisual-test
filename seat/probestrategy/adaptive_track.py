@@ -63,14 +63,7 @@ class AdaptiveTrack(ProbeStrategy, ABC):
             self.save_regression_plot = False
         
         self.num_response_intervals = 5  # TODO set this in config
-        self.results_df = pd.DataFrame(
-            {'trial_id': pd.Series([], dtype='int'),
-             'stimulus_id': pd.Series([], dtype='int'),
-             'target_level': pd.Series([], dtype='float'),
-             'probe_level': pd.Series([], dtype='float'),
-             'success_vector': pd.Series([], dtype='bool'),
-             'num_correct': pd.Series([], dtype='int'),
-             'trial_mean': pd.Series([], dtype='float')})
+        self.results_df = None
         self.trial_counter = 0
         self.stimulus_id = 0
         
@@ -98,12 +91,12 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         # TODO: use the available data to form estimate
         return self.probe_level
 
+
     def is_finished(self):
-        if (len(self.results_df) >= self.max_num_trials):
+        if (self.results_df is not None) and (self.results_df.shape[0] >= self.max_num_trials):
             return True
         else:
             return False
-
 
     def validate_result(self, result):
         """Raise exception if result does not match the expected form"""
@@ -120,15 +113,21 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         if self.verbosity > 2:
             print('result: ' + str(result))
             print('trial_counter: ' + str(self.trial_counter))
-        self.results_df = self.results_df.append({
-            'trial_id': self.trial_counter,
-            'stimulus_id': self.stimulus_id,
-            'target_level': self.target_level,
-            'probe_level': self.probe_level,
-            'success_vector': result,
-            'num_correct': np.sum(result),
-            'trial_mean': np.mean(result)},
-            ignore_index=True)
+        
+        new_row = pd.DataFrame({'trial_id': self.trial_counter,
+                                'stimulus_id': self.stimulus_id,
+                                'target_level': self.target_level,
+                                'probe_level': self.probe_level,
+                                'success_vector': [result],
+                                'num_correct': np.sum(result),
+                                'trial_mean': np.mean(result)})
+        
+        if self.results_df is None:
+            self.results_df = new_row
+        else:
+            self.results_df = pd.concat([self.results_df, new_row],
+                                        ignore_index=True)                  
+
         if self.verbosity > 2:
             print(self.results_df)
         if self.verbosity > 3:
