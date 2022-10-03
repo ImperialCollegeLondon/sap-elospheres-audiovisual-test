@@ -176,10 +176,10 @@ if __name__ == '__main__':
             }
         },
         "ProbeStrategy": {
-            "class": "probestrategy.adaptive_track.TargetFiftyPercent",
+            "class": "probestrategy.fixed_probe_level.MultipleFixedProbeLevels",
             "settings": {
-                # "initial_probe_level": -6,
                 "initial_probe_level": None,
+                "probe_level_variations_file": str(pathlib.Path(data_root_dir, 'probe_level_variations.txt')),
                 "max_num_trials": 3,
             }
         },
