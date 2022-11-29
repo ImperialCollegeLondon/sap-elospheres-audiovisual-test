@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<session attribution="Alastair H Moore" loop="true" duration="8" playonload="true">
+	<scene name="main" guiscale="8">
+		<source name="src">
+			<position >
+				0      2    0  0
+        2      2   10  0
+        6      2  -10  0
+        8      2    0  0
+			</position>
+			<sound>
+				<plugins>
+					<pink level="120" fmax="16000"/>
+			</plugins>
+			</sound>
+		</source>
+		<!-- define an array of 36 virtual speakers on the horizontal plane -->
+		<receiver name="out" type="nsp" layout="speaker_layout_Kayser2009_horiz_36.spk">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+	
+	<!-- connect directly to output for debugging -->
+	<!-- <connect src="render.main:out.bte_fl" dest="system:playback_1" />
+	<connect src="render.main:out.bte_fr" dest="system:playback_2" />
+	 -->
+	
+	<!-- connections from mha to the output are defined in the mha script but
+	 		 that doesn't seem to work for connecting tascar to the mha inputs	-->
+	<connect src="render.main:out.bte_fl" dest="mha:in_1" />
+	<connect src="render.main:out.bte_fr" dest="mha:in_2" />
+	<connect src="render.main:out.bte_bl" dest="mha:in_3" />
+	<connect src="render.main:out.bte_br" dest="mha:in_4" />
+</session>
