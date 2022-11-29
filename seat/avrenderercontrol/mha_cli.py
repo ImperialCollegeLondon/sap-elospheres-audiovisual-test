@@ -22,7 +22,10 @@ class MhaCli(ABC):
         self.cfg_path = config["cfg_path"]
         self.mha_install_dir = config["mha_install_dir"]
         # TODO: allow this to passed in the config
-        self.load_wait_time = 3
+        if "load_wait_time" in config:
+            self.load_wait_time = config["load_wait_time"]
+        else:
+            self.load_wait_time = 3
         self.mha_pid_as_str = ''
         self._ip_address = '127.0.0.1'
         self.osc_port = 33337
