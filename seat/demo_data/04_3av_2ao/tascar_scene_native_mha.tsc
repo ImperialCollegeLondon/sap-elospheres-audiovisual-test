@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<session duration="8" license="CC BY-SA 3.0" attribution="Alastair H Moore" loop="true">
+	<scene name="point_sources" guiscale="6" >
+		<source name="source1">
+			<position>
+				0  0 0 0
+		 </position>
+		<sound>
+			<plugins>
+			</plugins>
+		</sound>
+		</source>
+		<source name="source2">
+			<position>
+				0  0 0 0
+		 </position>
+		<sound>
+			<plugins>
+			</plugins>
+		</sound>
+		</source>
+		<source name="source3">
+			<position>
+				0  0 0 0
+		 </position>
+		<sound>
+		</sound>
+		</source>
+		<source name="source4">
+			<position>
+				0  0 0 0
+			</position>
+			<sound>
+			</sound>
+		</source>
+		<source name="source5">
+			<position>
+				0  0 0 0
+			</position>
+			<sound>
+			</sound>
+		</source>
+		<source name="pink">
+			<position>0 -2 0 0</position>
+			<sound><plugins>
+					<pink level="65" fmax="16000"/>
+			</plugins></sound>
+		</source>
+		<receiver name="out" type="nsp" layout="speaker_layout_Kayser2009_horiz_36.spk" gain="18">
+			<position>0 0 0 0</position>
+		</receiver>
+	</scene>
+	<modules>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9001 av_masker1.txt source1"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9003 target.txt source2"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9005 av_masker2.txt source3"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9007 ao_masker1.txt source4"/>
+		<system command="tascar_sampler -a 239.255.1.7 -p 9009 ao_masker2.txt source5" sleep="2.0"/>
+		<!-- <system command="jack-record $(date +%Y%m%d_%H%M%S).wav" sleep="0.5"/> -->
+  </modules>
+
+	<!-- connect all files/samples from each sampler to their respective source -->
+	<connect src="source1.*" dest="render.point_sources:source1.0.0" />
+	<connect src="source2.*" dest="render.point_sources:source2.0.0" />
+	<connect src="source3.*" dest="render.point_sources:source3.0.0" />
+	<connect src="source4.*" dest="render.point_sources:source4.0.0" />
+	<connect src="source5.*" dest="render.point_sources:source5.0.0" />
+
+	<!-- connections from mha to the output are defined in the mha script but
+	 		 that doesn't seem to work for connecting tascar to the mha inputs	-->
+	<connect src="render.point_sources:out.bte_fl" dest="mha:in_1" />
+	<connect src="render.point_sources:out.bte_fr" dest="mha:in_2" />
+	<connect src="render.point_sources:out.bte_bl" dest="mha:in_3" />
+	<connect src="render.point_sources:out.bte_br" dest="mha:in_4" />
+
+	<!-- connect outputs to jack-record -->
+	<connect src="render.*:out_l" dest="jack-record-*:in_1" />
+	<connect src="render.*:out_r" dest="jack-record-*:in_2" />
+
+</session>

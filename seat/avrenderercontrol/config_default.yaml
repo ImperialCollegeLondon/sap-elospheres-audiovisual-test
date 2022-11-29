@@ -20,3 +20,7 @@ sampler:
   source3:
     oscport: 9005
     name: source3
+mha:
+  ipenvvariable: 'JTC_REMOTE_IP_SETTING'
+  ipaddress: ''
+  oscport: 33337

@@ -193,6 +193,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         self.tascar_client = udp_client.SimpleUDPClient(
             self.tascar_cli.ip_address,
             self.tascar_cli.osc_port)
+        # TODO: setup mha client
 
         for src_name in self.src:
             # this works on TascarCliMacLocal but not TascarCliWsl
@@ -221,6 +222,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.video_client._sock.close()
         if hasattr(self, 'tascar_client'):
             self.tascar_client._sock.close()
+        # TODO: close mha client
         for src_name in self.src:
             if hasattr(self.src[src_name], 'sampler_client'):
                 self.src[src_name].sampler_client._sock.close()
@@ -230,7 +232,11 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         Basic implementation - subclasses may need to override
         """
         if self.state == avrc.AVRCState.READY_TO_START:
-
+            # start mha
+            if self.mha_cli is not None:    
+                self.mha_cli.start()
+            
+            # start tascar
             self.tascar_cli.start()
 
             time.sleep(10.0) #allow time for lsl stuff to happen
@@ -239,11 +245,12 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             # one shot for the background
             self.video_client.send_message(
                 "/video/play", [0, str(self.skybox_path)])
-            time.sleep(1)
-            self.tascar_client.send_message("/background_noise/pink/mute",[1])
-            time.sleep(1)
-            self.tascar_client.send_message("/background_noise/pink/mute",[0])
-            time.sleep(0.1)
+            # mute and unmute the background noise as a check - this breaks if we change the scene/sourcce names though
+            # time.sleep(1)
+#             self.tascar_client.send_message("/background_noise/pink/mute",[1])
+#             time.sleep(1)
+#             self.tascar_client.send_message("/background_noise/pink/mute",[0])
+#             time.sleep(0.1)
             # print(f'outputdir: {str(self.datalogging_dir)}')
             # self.tascar_client.send_message("/session_outputdir", str(self.datalogging_dir)) # expects raw string
 
@@ -265,6 +272,8 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         self.tascar_client.send_message("/seat_marker",['{"event_id":"stop_scene"}'])
         # self.tascar_client.send_message("/seat_marker",'stop_scene without brackets')
 
+        
+        self.tascar_client.send_message("/*/out/mute",[1])
         self.tascar_client.send_message("/session_stop",[])
         time.sleep(1) # need to give tascar time to close the datalogging file
 
@@ -281,6 +290,9 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             print('State is ACTIVE - calling tascar_cli.stop()')
             self.tascar_cli.stop()
             self.state = avrc.AVRCState.TERMINATED
+        
+        if self.mha_cli is not None:    
+            self.mha_cli.stop()
 
 
 
@@ -304,6 +316,12 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
 
     def load_config(self, config):
         # TODO: validate, validate, validate !!!
+
+        # instantiate the required type of mha_cli
+        if 'MhaCommandLineInterface' in config:
+            self.mha_cli = util.instance_builder(config["MhaCommandLineInterface"])
+        else:
+            self.mha_cli = None
 
         # instantiate the required type of tascar_cli
         self.tascar_cli = util.instance_builder(config["TascarCommandLineInterface"])
