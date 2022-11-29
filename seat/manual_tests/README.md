@@ -27,3 +27,11 @@ Launches tascar, runs a scene for several seconds then stops it.  The scene rend
 python -m manual_tests.test_tascar_cli_on_mac_with_osc_samplers
 ```
 Launches tascar, starts scene with noise source to the rear. Sends OSC commands to trigger samplers.
+
+
+### `test_mha_cli_on_mac.py`
+
+```
+python -m manual_tests.test_mha_cli_on_mac
+```
+Launches mha and tascar, starts scene with noise source which circles the head. Beamformer fixed to the front means that everything is heard to the front but the level changes as the source moves.
