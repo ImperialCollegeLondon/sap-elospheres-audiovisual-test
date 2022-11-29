@@ -9,7 +9,7 @@ if __name__ == '__main__':
     scene_path = pathlib.Path(parent_directory,'manual_tests_data','tascar_cli',
                               'moving_source.tsc')
     config = {'scene_path': scene_path}
-    tascar_cli = avrc.MacLocal(config)
+    tascar_cli = avrc.TascarCliMacLocal(config)
     tascar_cli.start()
     time.sleep(5)
     tascar_cli.stop()

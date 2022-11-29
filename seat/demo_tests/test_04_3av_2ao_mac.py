@@ -20,7 +20,7 @@ if __name__ == '__main__':
             "class": "avrenderercontrol.lep_tascar_osc.TargetSpeechTwoMaskers",
             "settings": {
                 "TascarCommandLineInterface": {
-                    "class": 'avrenderercontrol.tascar_cli.MacLocal',
+                    "class": 'avrenderercontrol.tascar_cli.TascarCliMacLocal',
                     "settings": {
                         "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_native.tsc'))
                     },

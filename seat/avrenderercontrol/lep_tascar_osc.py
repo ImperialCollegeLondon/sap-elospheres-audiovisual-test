@@ -195,12 +195,12 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             self.tascar_cli.osc_port)
 
         for src_name in self.src:
-            # this works on MacLocal but not WSL
+            # this works on TascarCliMacLocal but not TascarCliWsl
             # self.src[src_name]["sampler_client"] = udp_client.SimpleUDPClient(
             #     self.src[src_name]["sampler_ip_address"],
             #     self.src[src_name]["sampler_osc_port"])
 
-            # this works on WSL
+            # this works on TascarCliWsl
             self.src[src_name]["sampler_client"] = udp_client.SimpleUDPClient(
                 self.tascar_cli.ip_address,
                 self.src[src_name]["sampler_osc_port"])

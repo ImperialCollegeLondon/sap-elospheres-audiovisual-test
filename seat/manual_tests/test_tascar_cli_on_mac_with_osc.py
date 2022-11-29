@@ -13,7 +13,7 @@ if __name__ == '__main__':
                               'moving_source.tsc')
     config = {'scene_path': scene_path}
     
-    # we know it's MacLocal so use know ipaddress
+    # we know it's TascarCliMacLocal so use know ipaddress
     tascar_ipaddress = '127.0.0.1'
     tascar_osc_port = 9877
     if not util.is_valid_ipaddress(tascar_ipaddress):
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     source_name = 'src'
     
     # start tascar
-    tascar_cli = avrc.MacLocal(config)
+    tascar_cli = avrc.TascarCliMacLocal(config)
     tascar_cli.start()
     time.sleep(2)
     

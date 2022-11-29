@@ -5,7 +5,7 @@ AVRendererControl:
   class: avrenderercontrol.osc_tascar.TargetSpeechTwoMaskers
   settings:
     TascarCommandInterface:
-       class: avrenderercontrol.tascar_cli.MacLocal
+       class: avrenderercontrol.tascar_cli.TascarCliMacLocal
        settings:
           tascar_scene_path: tascar_scene.tsc
     pre_target_delay: 0.0

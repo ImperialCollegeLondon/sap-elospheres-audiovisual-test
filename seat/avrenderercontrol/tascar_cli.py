@@ -50,7 +50,7 @@ class TascarCli(ABC):
 
 
 
-class MacLocal(TascarCli):
+class TascarCliMacLocal(TascarCli):
     def __init__(self, config):
         super().__init__(config)
 
@@ -126,7 +126,7 @@ class MacLocal(TascarCli):
             self.tascar_process.terminate()
 
 
-class WSL(TascarCli):
+class TascarCliWsl(TascarCli):
     def __init__(self, config):
         super().__init__(config)
 
