@@ -1,4 +1,5 @@
 import seat
+import util
 import pathlib
 from datetime import datetime
 
@@ -20,17 +21,17 @@ if __name__ == '__main__':
             "class": "avrenderercontrol.lep_tascar_osc.TargetSpeechTwoMaskers",
             "settings": {
                 "TascarCommandLineInterface": {
-                    "class": 'avrenderercontrol.tascar_cli.TascarCliMacLocal',
+                    "class": 'avrenderercontrol.tascar_cli.TascarCliWsl',
                     "settings": {
                         "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_os_agnostic_mha.tsc'))
                     },
                 },
                 "MhaCommandLineInterface": {
-                    "class": 'avrenderercontrol.mha_cli.MhaCliMacLocal',
+                    "class": 'avrenderercontrol.mha_cli.MhaCliWsl',
                     "settings": {
                         "base_dir": str(pathlib.Path(data_root_dir)),
-                        "cfg_path": 'mha_mac.cfg',
-                        "mha_install_dir": pathlib.Path(pathlib.Path.home(),'git','alastairhmoore','openMHA')
+                        "cfg_path": 'mha_wsl.cfg',
+                        "mha_install_dir": pathlib.PurePosixPath(util.wsl_user_home_dir(),'git','alastairhmoore','openMHA')
                     },
                 },
                 "datalogging_dir": str(tmp_dir),

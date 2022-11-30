@@ -21,7 +21,6 @@ class MhaCli(ABC):
         self.base_dir = config["base_dir"]
         self.cfg_path = config["cfg_path"]
         self.mha_install_dir = config["mha_install_dir"]
-        # TODO: allow this to passed in the config
         if "load_wait_time" in config:
             self.load_wait_time = config["load_wait_time"]
         else:
@@ -65,10 +64,10 @@ class MhaCliMacLocal(MhaCli):
         base_dir = pathlib.Path(self.base_dir)
         cfg_path = pathlib.Path(self.cfg_path)
         util.check_path_is_file(pathlib.Path(base_dir, cfg_path))
-        
+
         thismha_path = pathlib.Path(self.mha_install_dir,'bin','thismha.sh')
         util.check_path_is_file(thismha_path)
-        
+
         cli_command = f'source {thismha_path} && cd {str(base_dir)} && mha ?read:{str(cfg_path)} io.name=mha port={self.osc_port} cmd=start'
         print(cli_command)
         self.mha_process = subprocess.Popen(cli_command, shell=True)
@@ -138,8 +137,6 @@ class MhaCliMacLocal(MhaCli):
 
 class MhaCliWsl(MhaCli):
     def __init__(self, config):
-        raise NotImplemented
-        # TODO: Go through the code below and properly adapt it to mha - this is just tascar_cli with find/replace
         super().__init__(config)
 
         app_name = 'mha_wsl'
@@ -163,15 +160,21 @@ class MhaCliWsl(MhaCli):
 
 
     def start(self):
-        pathlib_path = pathlib.Path(self.scene_path)
-        util.check_path_is_file(pathlib_path) # windows path
-        wsl_path = util.convert_windows_path_to_wsl(pathlib_path)
+        base_dir = pathlib.Path(self.base_dir)
+        cfg_path = pathlib.Path(self.cfg_path)
+        util.check_path_is_file(pathlib.Path(base_dir, cfg_path))  # windows path
+        base_dir = util.convert_windows_path_to_wsl(base_dir)
+        cfg_path = util.convert_windows_path_to_wsl(cfg_path)
 
-        cli_command = 'wsl ' \
-            + '-u root bash -c \"/usr/bin/mha ' \
-            + str(wsl_path) \
-            + '\"'
-        # print(cli_command)
+        # trust that the wsl land path is correct
+        thismha_path = pathlib.PurePosixPath(self.mha_install_dir,'bin','thismha.sh')
+        # util.check_path_is_file(thismha_path)
+
+        cli_command = f'source {thismha_path} && cd {str(base_dir)} && mha ?read:{str(cfg_path)} io.name=mha port={self.osc_port} cmd=start'
+        print(cli_command)
+
+        cli_command = f'wsl -u root bash -c \"{cli_command}\"'
+        print(cli_command)
         self.mha_process = subprocess.Popen(
             cli_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 

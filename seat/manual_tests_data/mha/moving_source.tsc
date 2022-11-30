@@ -15,16 +15,17 @@
 			</sound>
 		</source>
 		<!-- define an array of 36 virtual speakers on the horizontal plane -->
-		<receiver name="out" type="nsp" layout="speaker_layout_Kayser2009_horiz_36.spk">
+		<!-- <receiver name="out" type="nsp" layout="speaker_layout_Kayser2009_horiz_36.spk"> -->
+		<receiver name="out" type="vbap" layout="speaker_layout_Kayser2009_horiz_36.spk">
 			<position>0 0 0 0</position>
 		</receiver>
 	</scene>
-	
+
 	<!-- connect directly to output for debugging -->
 	<!-- <connect src="render.main:out.bte_fl" dest="system:playback_1" />
 	<connect src="render.main:out.bte_fr" dest="system:playback_2" />
 	 -->
-	
+
 	<!-- connections from mha to the output are defined in the mha script but
 	 		 that doesn't seem to work for connecting tascar to the mha inputs	-->
 	<connect src="render.main:out.bte_fl" dest="mha:in_1" />

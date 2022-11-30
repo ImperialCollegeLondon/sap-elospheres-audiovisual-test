@@ -37,6 +37,19 @@ def convert_windows_path_to_wsl(pathlib_win_path):
         print(wsl_command)
         raise error
 
+def wsl_user_home_dir():
+    wsl_command = ("wsl bash -c 'echo $HOME'")
+    try:
+        result = subprocess.run(wsl_command,
+                                capture_output=True,
+                                check=True,
+                                text=True)
+        return result.stdout.rstrip()
+
+    except subprocess.CalledProcessError as error:
+        print('Path conversion using wslpath failed')
+        print(wsl_command)
+        raise error
 
 def instance_builder(config):
     """ Returns a class instance given a dict with keys

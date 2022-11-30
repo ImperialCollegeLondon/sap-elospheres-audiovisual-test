@@ -19,6 +19,10 @@ class TascarCli(ABC):
     """
     def __init__(self, config):
         self.scene_path = config["scene_path"]
+        if "load_wait_time" in config:
+            self.load_wait_time = config["load_wait_time"]
+        else:
+            self.load_wait_time = 3
         self.tascar_pid_as_str = ''
         self._ip_address = '127.0.0.1'
         self.osc_port = 9877
@@ -73,7 +77,7 @@ class TascarCliMacLocal(TascarCli):
 
 
         # give tascar a chance to start
-        time.sleep(0.3)
+        time.sleep(self.load_wait_time)
 
         # check process is running
         if self.tascar_process.poll() is not None:
@@ -159,13 +163,13 @@ class TascarCliWsl(TascarCli):
             + '-u root bash -c \"/usr/bin/tascar_cli ' \
             + str(wsl_path) \
             + '\"'
-        # print(cli_command)
+        print(cli_command)
         self.tascar_process = subprocess.Popen(
             cli_command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
         # give tascar a chance to start
-        time.sleep(0.3)
-
+        time.sleep(self.load_wait_time)
+        
         # check process is running
         if self.tascar_process.poll() is not None:
             # oh dear, it's not running!

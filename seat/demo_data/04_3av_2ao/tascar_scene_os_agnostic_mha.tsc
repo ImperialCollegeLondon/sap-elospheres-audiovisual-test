@@ -46,7 +46,7 @@
 					<pink level="65" fmax="16000"/>
 			</plugins></sound>
 		</source>
-		<receiver name="out" type="nsp" layout="speaker_layout_Kayser2009_horiz_36.spk" gain="18">
+		<receiver name="out" type="vbap" layout="speaker_layout_Kayser2009_horiz_36.spk" gain="18">
 			<position>0 0 0 0</position>
 		</receiver>
 	</scene>
