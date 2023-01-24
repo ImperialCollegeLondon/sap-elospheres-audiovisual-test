@@ -23,7 +23,8 @@ if __name__ == '__main__':
                 "TascarCommandLineInterface": {
                     "class": 'avrenderercontrol.tascar_cli.TascarCliWsl',
                     "settings": {
-                        "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_os_agnostic_mha.tsc'))
+                        "scene_path": str(pathlib.Path(data_root_dir, 'tascar_scene_os_agnostic_mha.tsc')),
+                        "load_wait_time": 5
                     },
                 },
                 "MhaCommandLineInterface": {
@@ -31,7 +32,8 @@ if __name__ == '__main__':
                     "settings": {
                         "base_dir": str(pathlib.Path(data_root_dir)),
                         "cfg_path": 'mha_wsl.cfg',
-                        "mha_install_dir": pathlib.PurePosixPath(util.wsl_user_home_dir(),'git','alastairhmoore','openMHA')
+                        "mha_install_dir": pathlib.PurePosixPath(util.wsl_user_home_dir(),'git','alastairhmoore','openMHA'),
+                        "load_wait_time": 3
                     },
                 },
                 "datalogging_dir": str(tmp_dir),
@@ -124,7 +126,7 @@ if __name__ == '__main__':
                 "masker_names": ['av_masker1', 'av_masker2','ao_masker1','ao_masker2'],
                 "sources": {
                     "target": {
-                        "present_video": False,
+                        "present_video": True,
                         "video_paths_file": str(pathlib.Path(data_root_dir, 'target_video.txt')),
                         "present_cue_video": False,
                         "cue_videos_paths_file": str(pathlib.Path(data_root_dir, 'target_cue_video.txt')),
@@ -136,7 +138,7 @@ if __name__ == '__main__':
                         "video_id": 2
                     },
                     "av_masker1": {
-                        "present_video": False,
+                        "present_video": True,
                         "video_paths_file": str(pathlib.Path(data_root_dir, 'av_masker1_video.txt')),
                         "present_cue_video": False,
                         "locations_file": str(pathlib.Path(data_root_dir, 'av_masker1_location.txt')),
@@ -148,7 +150,7 @@ if __name__ == '__main__':
 
                     },
                     "av_masker2": {
-                        "present_video": False,
+                        "present_video": True,
                         "video_paths_file": str(pathlib.Path(data_root_dir, 'av_masker2_video.txt')),
                         "present_cue_video": False,
                         "locations_file": str(pathlib.Path(data_root_dir, 'av_masker2_location.txt')),
