@@ -62,7 +62,7 @@ class TascarCliMacLocal(TascarCli):
         pathlib_path = pathlib.Path(self.scene_path)
         util.check_path_is_file(pathlib_path)
 
-        cli_command = f'tascar_cli {str(pathlib_path)}'
+        cli_command = f'tascar_cli {str(pathlib_path)}' # for normal use
         # cli_command = f'tascar {str(pathlib_path)}' # for debugging purposes, we can show the gui
         print(cli_command)
         self.tascar_process = subprocess.Popen(cli_command, shell=True)
@@ -159,10 +159,18 @@ class TascarCliWsl(TascarCli):
         util.check_path_is_file(pathlib_path) # windows path
         wsl_path = util.convert_windows_path_to_wsl(pathlib_path)
 
+        # apt installed version
         cli_command = 'wsl ' \
             + '-u root bash -c \"/usr/bin/tascar_cli ' \
             + str(wsl_path) \
             + '\"'
+
+        # locally built and installed version
+        cli_command = 'wsl ' \
+            + '-u root bash -c \"export LD_LIBRARY_PATH=/usr/local/lib; /usr/local/bin/tascar_cli ' \
+            + str(wsl_path) \
+            + '\"'
+
         print(cli_command)
         self.tascar_process = subprocess.Popen(
             cli_command, creationflags=subprocess.CREATE_NEW_CONSOLE)

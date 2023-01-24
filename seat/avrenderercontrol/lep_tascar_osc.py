@@ -233,9 +233,9 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         """
         if self.state == avrc.AVRCState.READY_TO_START:
             # start mha
-            if self.mha_cli is not None:    
+            if self.mha_cli is not None:
                 self.mha_cli.start()
-            
+
             # start tascar
             self.tascar_cli.start()
 
@@ -272,7 +272,7 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
         self.tascar_client.send_message("/seat_marker",['{"event_id":"stop_scene"}'])
         # self.tascar_client.send_message("/seat_marker",'stop_scene without brackets')
 
-        
+
         self.tascar_client.send_message("/*/out/mute",[1])
         self.tascar_client.send_message("/session_stop",[])
         time.sleep(1) # need to give tascar time to close the datalogging file
@@ -290,8 +290,8 @@ class ListeningEffortPlayerAndTascarUsingOSCBase(avrc.AVRendererControl):
             print('State is ACTIVE - calling tascar_cli.stop()')
             self.tascar_cli.stop()
             self.state = avrc.AVRCState.TERMINATED
-        
-        if self.mha_cli is not None:    
+
+        if self.mha_cli is not None:
             self.mha_cli.stop()
 
 
@@ -479,6 +479,7 @@ class TargetSpeechTwoMaskers(ListeningEffortPlayerAndTascarUsingOSCBase):
                 msg_contents = [
                     self.src[src_name]["video_id"],
                     str(self.src[src_name]["video_paths"][stimulus_id])]
+                # print(f'Sending message: /video/play {msg_contents}')    
                 self.video_client.send_message("/video/play", msg_contents)
 
         # - audio after a short pause to get lip sync right
