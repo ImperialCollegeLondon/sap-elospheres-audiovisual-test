@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from .probe_strategy import ProbeStrategy
+import numbers
 import numpy as np
 import pandas as pd
 import pathlib
@@ -67,8 +68,16 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         self.trial_counter = 0
         self.stimulus_id = 0
         
-        self.probe_level = config["initial_probe_level"]
-
+        if "initial_probe_level" in config:
+            val = config["initial_probe_level"]
+            if isinstance(val, numbers.Number):
+                self.probe_level = val
+            elif (isinstance(val, list) and len(val) == 0) or val is None:
+                self.probe_level = None
+            else:
+                raise ValueError(f'initial_probe_level should be scalar or empty list')
+        else:
+            self.probe_level = None
 
     def setup(self, ui="gui"):
         if self.probe_level is None:
