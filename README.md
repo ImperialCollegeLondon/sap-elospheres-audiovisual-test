@@ -4,6 +4,10 @@ Implements the logic for running audiovisual intelligibility tests.
 
 Targets Windows platform with Windows Subsystem for Linux already installed.
 
+## Pre-requisites
+- Ubuntu installed under WSL2
+- 
+
 ## Installation
 1. Open an anaconda shell
 
