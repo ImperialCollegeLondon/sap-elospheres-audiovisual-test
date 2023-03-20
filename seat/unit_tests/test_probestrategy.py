@@ -53,6 +53,60 @@ class TestFixedProbeLevel(unittest.TestCase):
             self.assertEqual(ps.get_current_estimate(), avg)
 
 
+class TestEmptyValueHandling(unittest.TestCase):
+    def test_None_value(self):
+        """
+        Test that it returns None
+        """
+        MAX_NUM_TRIALS = 3
+        config = {"initial_probe_level": None,
+                  "max_num_trials": MAX_NUM_TRIALS}
+        val = FixedProbeLevel.parse_possibly_empty_scalar_key(config, "initial_probe_level")
+        self.assertIsNone(val, f'Return value should be None')
+
+    def test_empty_list(self):
+        """
+        Test that it returns None
+        """
+        MAX_NUM_TRIALS = 3
+        config = {"initial_probe_level": [],
+                "max_num_trials": MAX_NUM_TRIALS}
+        val = FixedProbeLevel.parse_possibly_empty_scalar_key(config, "initial_probe_level")
+        self.assertIsNone(val, f'Return value should be None')
+
+    def test_missing_key(self):
+            """
+            Test that it returns None
+            """
+            MAX_NUM_TRIALS = 3
+            config = {"max_num_trials": MAX_NUM_TRIALS}
+            val = FixedProbeLevel.parse_possibly_empty_scalar_key(config, "initial_probe_level")
+            self.assertIsNone(val, f'Return value should be None')
+
+    def test_string_value(self):
+            """
+            Test that it fails
+            """
+            MAX_NUM_TRIALS = 3
+            config = {"initial_probe_level": 'mystring',
+                      "max_num_trials": MAX_NUM_TRIALS}
+            with self.assertRaises(ValueError):
+                val = FixedProbeLevel.parse_possibly_empty_scalar_key(config, "initial_probe_level")
+ 
+
+    def test_number_in_list(self):
+            """
+            Test that it fails
+            """
+            MAX_NUM_TRIALS = 3
+            config = {"initial_probe_level": [5],
+                      "max_num_trials": MAX_NUM_TRIALS}
+            with self.assertRaises(ValueError):
+                val = FixedProbeLevel.parse_possibly_empty_scalar_key(config, "initial_probe_level")
+ 
+
+
+
 class TestMultipleFixedProbeLevels(unittest.TestCase):
 
     DATA = dedent("""

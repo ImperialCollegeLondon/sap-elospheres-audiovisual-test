@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numbers
 import pandas as pd
 import PySimpleGUI as sg
 import click
@@ -99,3 +100,20 @@ class ProbeStrategy(ABC):
             raise ValueError(f'ProbeStrategy.prompt_for_level(): A valid value was not obtained.')
 
         return validated_input
+    
+    def parse_possibly_empty_scalar_key(the_dict, the_key):
+        """
+        Utility function to retrieve key value with appropriate defaults
+        
+        """
+        if the_key in the_dict:
+            val = the_dict[the_key]
+            if isinstance(val, numbers.Number):
+                return val
+            elif (isinstance(val, list) and len(val) == 0) or val is None:
+                return None
+            else:
+                raise ValueError(f'{the_key} should be scalar or empty list')
+        else:
+            return None
+

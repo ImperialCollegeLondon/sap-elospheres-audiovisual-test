@@ -11,16 +11,8 @@ class FixedProbeLevel(ProbeStrategy):
     Stopping criterion is the predetermined number of trials.
     """
     def __init__(self, config):
-        if "initial_probe_level" in config:
-            val = config["initial_probe_level"]
-            if isinstance(val, numbers.Number):
-                self.fixed_level = val
-            elif (isinstance(val, list) and len(val) == 0) or val is None:
-                self.fixed_level = None
-            else:
-                raise ValueError(f'initial_probe_level should be scalar or empty list')
-        else:
-            self.fixed_level = None
+        self.fixed_level = ProbeStrategy.parse_possibly_empty_scalar_key(
+            config, "initial_probe_level")
         self.num_trials = config["max_num_trials"]
         self.results_df = None
         self.next_stimulus_id = 0
