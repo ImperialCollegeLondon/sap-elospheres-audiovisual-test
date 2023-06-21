@@ -16,3 +16,10 @@ jobs:
       - name: Build executable
         working-directory: ./seat
         run: pyinstaller gui.spec
+
+      - name: Upload executable as test artifact
+        uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: seat-gui
+          path: seat/dist/gui.exe
