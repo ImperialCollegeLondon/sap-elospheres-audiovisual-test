@@ -27,6 +27,7 @@ dependencies:
   - pycodestyle
   - pycparser
   - pyflakes
+  - pyinstaller
   - pysimplegui
   - python=3.8.3
   - python-dateutil
