@@ -15,7 +15,7 @@ jobs:
 
       - name: Build executable
         working-directory: ./seat
-        run: pyinstaller gui.spec
+        run: pyinstaller seat-gui.spec
 
       - name: Upload executable as test artifact
         uses: actions/upload-artifact@v3
