@@ -3,13 +3,33 @@ import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
 block_cipher = None
 
+datas=[
+    ("jacktripcontrol/config_default.yaml", "jacktripcontrol"),
+    ("jacktripcontrol/init_env.ps1", "jacktripcontrol"),
+    ("avrenderercontrol/config_default.yaml", "avrenderercontrol"),
+]
+
+hidden_imports=[
+    "avrenderercontrol.av_renderer_control",
+    "avrenderercontrol.lep_tascar_osc",
+    "avrenderercontrol.mha_cli",
+    "avrenderercontrol.osc_tascar_wsl",
+    "avrenderercontrol.tascar_cli",
+    "probestrategy.adaptive_track",
+    "probestrategy.fixed_probe_level",
+    "probestrategy.probestrategy",
+    "probestrategy.psychometric_function",
+    "responsemode.response_mode",
+    "responsemode.signal_detection",
+    "responsemode.speech_intelligibility",
+]
 
 a = Analysis(
     ['gui.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
