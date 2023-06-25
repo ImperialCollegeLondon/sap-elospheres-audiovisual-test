@@ -26,3 +26,14 @@ jobs:
         with:
           name: seat-gui
           path: seat/dist/seat-gui/*
+
+      - name: Zip output folder
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: ${{github.workspace}}/seat/dist
+        run: 7z a -tzip seat-gui.zip seat-gui
+
+      - name: Upload release artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+            files: seat/dist/seat-gui.zip
