@@ -25,4 +25,4 @@ jobs:
         if: success()
         with:
           name: seat-gui
-          path: seat/dist/seat-gui.exe
+          path: seat/dist/seat-gui/*
