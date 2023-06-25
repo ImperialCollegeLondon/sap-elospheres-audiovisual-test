@@ -9,6 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Download jacktrip
+        run: Invoke-WebRequest -Uri https://ccrma.stanford.edu/software/jacktrip/windows/jacktrip.exe -OutFile ./seat/jacktrip.exe
+
       - name: Set up conda environment
         uses: s-weigand/setup-conda@v1
       - run: conda env update --file seat.yml --name base
