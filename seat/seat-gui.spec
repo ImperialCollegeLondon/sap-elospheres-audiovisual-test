@@ -1,7 +1,27 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
+import os
+from shutil import which
+from warnings import warn
+
 block_cipher = None
+
+DEFAULT_JACK_PATH = 'C:/Program Files (x86)/Jack'
+DEFAULT_JACKTRIP_PATH = 'C:/jacktrip'
+
+bundled = ("jackd", "jack_connect", "jack_disconnect", "jacktrip")
+path = os.environ["PATH"]
+if sys.platform == "win32":
+    path = f"{DEFAULT_JACK_PATH};{DEFAULT_JACKTRIP_PATH};{path}"
+
+binaries = []
+for prog in bundled:
+    prog_path = which(prog, path=path)
+    if prog_path:
+        binaries.append((prog_path, "bin/"))
+    else:
+        warn(f"Could not find {prog}; it will not be bundled")
 
 datas=[
     ("jacktripcontrol/config_default.yaml", "jacktripcontrol"),
@@ -27,7 +47,7 @@ hidden_imports=[
 a = Analysis(
     ['gui.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hidden_imports,
     hookspath=[],
