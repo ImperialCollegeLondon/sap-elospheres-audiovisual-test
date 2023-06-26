@@ -1,6 +1,6 @@
 name: Build and deploy
 
-on: [push, release]
+on: [release]
 
 jobs:
   build:
@@ -20,20 +20,11 @@ jobs:
         working-directory: ./seat
         run: pyinstaller seat-gui.spec
 
-      - name: Upload executable as test artifact
-        uses: actions/upload-artifact@v3
-        if: success()
-        with:
-          name: seat-gui
-          path: seat/dist/seat-gui/*
-
       - name: Zip output folder
-        if: startsWith(github.ref, 'refs/tags/')
         working-directory: ${{github.workspace}}/seat/dist
         run: 7z a -tzip seat-gui.zip seat-gui
 
       - name: Upload release artifacts
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
             files: seat/dist/seat-gui.zip
