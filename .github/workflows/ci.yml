@@ -14,7 +14,7 @@ jobs:
 
       - name: Set up conda environment
         uses: s-weigand/setup-conda@v1
-      - run: conda env update --file seat.yml --name base
+      - run: conda env update --file seat-versionless.yml --name base
 
       - name: Build executable
         working-directory: ./seat
