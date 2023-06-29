@@ -4,8 +4,6 @@ import numbers
 import numpy as np
 import pandas as pd
 import pathlib
-import matplotlib.pyplot as plt
-import seaborn as sns
 import warnings
 
 
@@ -40,6 +38,9 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         
         if "display_plot" in config:
             self.display_plot = config["display_plot"]
+            if self.display_plot:
+                import matplotlib.pyplot as plt
+                import seaborn as sns
         else:
             self.display_plot = False
             
