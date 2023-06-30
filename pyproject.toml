@@ -1,0 +1,27 @@
+[project]
+name = "seat"
+version = "0.6.0"
+authors = [
+    { name = "Alastair Moore", email = "alastair.h.moore@imperial.ac.uk" }
+]
+requires-python = ">=3.8.3"
+dependencies = [
+    "click",
+    "confuse",
+    "pandas",
+    "numpy<1.25", # 1.25 only supports python > 3.9
+    "pyinstaller",
+    "pysimplegui",
+    "pyyaml",
+    "jack-client",
+    "python-osc",
+    "pylsl",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "flake8-polyfill",
+    "pip-tools"
+]
