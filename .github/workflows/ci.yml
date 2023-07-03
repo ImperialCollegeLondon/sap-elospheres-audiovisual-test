@@ -7,14 +7,16 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Download jacktrip
         run: Invoke-WebRequest -Uri https://ccrma.stanford.edu/software/jacktrip/windows/jacktrip.exe -OutFile ./seat/jacktrip.exe
 
-      - name: Set up conda environment
-        uses: s-weigand/setup-conda@v1
-      - run: conda env update --file seat-versionless.yml --name base
+      - name: Set up python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - run: pip install -r dev-requirements.txt
 
       - name: Build executable
         working-directory: ./seat
