@@ -9,5 +9,5 @@ Start-Process -FilePath "C:/Program Files (x86)/Jack/jackd.exe" `
   -ArgumentList "-S -dportaudio -d""ASIO::ASIO4ALL v2"" -r48000 -p128"
 
 "Starting JackTrip..."
-Start-Process -FilePath "C:\jacktrip_v1.2.1\jacktrip.exe" `
+Start-Process -FilePath "C:\jacktrip\jacktrip.exe" `
   -ArgumentList "-c $remote_ip --clientname $remote_ip --nojackportsconnect"

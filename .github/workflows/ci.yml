@@ -1,0 +1,32 @@
+name: Build and deploy
+
+on: [release]
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download jacktrip
+        run: Invoke-WebRequest -Uri https://ccrma.stanford.edu/software/jacktrip/windows/jacktrip.exe -OutFile ./seat/jacktrip.exe
+
+      - name: Set up python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - run: pip install -r dev-requirements.txt
+
+      - name: Build executable
+        working-directory: ./seat
+        run: pyinstaller seat-gui.spec
+
+      - name: Zip output folder
+        working-directory: ${{github.workspace}}/seat/dist
+        run: 7z a -tzip seat-gui.zip seat-gui
+
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+            files: seat/dist/seat-gui.zip
