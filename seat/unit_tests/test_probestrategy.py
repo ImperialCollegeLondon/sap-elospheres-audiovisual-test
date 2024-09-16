@@ -453,7 +453,7 @@ class TestTargetFiftyPercent(unittest.TestCase):
                       "step_size": step_size,
                       "verbosity": 1,
                       "display_plot": False,
-                      "save_probe_history_plot": True,
+                      "save_probe_history_plot": False,
                       "probe_fig_save_path": probe_fig_save_path}
             ps = TargetFiftyPercent(config)
             dummy_listener = PsychometricFunction(threshold_db=true_threshold,
@@ -493,9 +493,9 @@ class TestDualTargetTwentyEightyPercent(unittest.TestCase):
                       "step_size": step_size,
                       "verbosity": 0,
                       "display_plot": False,
-                      "save_probe_history_plot": True,
+                      "save_probe_history_plot": False,
                       "probe_fig_save_path": probe_fig_save_path,
-                      "save_regression_plot": True,
+                      "save_regression_plot": False,
                       "regression_fig_save_path": regression_fig_save_path}
             ps = DualTargetTwentyEightyPercent(config)
             dummy_listener = PsychometricFunction(threshold_db=true_threshold,
