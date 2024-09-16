@@ -95,7 +95,7 @@ class CSVLogger:
             
         # force the index of the added dataframe row
         # print(data)
-        data = data.reset_index() # get rid of current index (in some cases it is called row_id)
+        data = data.reset_index(drop=True) # get rid of current index (in some cases it is called row_id)
         # data["row_id"]=row_id # causes SettingWithCopyWarning
         # print(data)
         data.loc[:,"row_id"] = row_id
