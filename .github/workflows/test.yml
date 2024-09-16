@@ -20,4 +20,4 @@ jobs:
     - name: Run tests
       working-directory: ./seat
       # run: python -m unittest discover unit_tests
-      python -m unittest unit_tests.test_seatlog.TestSeatLog
+      run: python -m unittest unit_tests.test_seatlog.TestSeatLog
