@@ -38,9 +38,6 @@ class AdaptiveTrack(ProbeStrategy, ABC):
         
         if "display_plot" in config:
             self.display_plot = config["display_plot"]
-            if self.display_plot:
-                import matplotlib.pyplot as plt
-                import seaborn as sns
         else:
             self.display_plot = False
             
@@ -52,7 +49,11 @@ class AdaptiveTrack(ProbeStrategy, ABC):
                 else:
                     raise ValueError("config is missing probe_fig_save_path key")
         else:
-            self.save_probe_history_plot = False    
+            self.save_probe_history_plot = False
+
+        if self.display_plot or self.save_probe_history_plot:
+            import matplotlib.pyplot as plt
+            import seaborn as sns
         
         if "save_regression_plot" in config:
             self.save_regression_plot = config["save_regression_plot"]
