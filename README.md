@@ -9,6 +9,36 @@ Targets Windows platform with Windows Subsystem for Linux already installed.
 - 
 
 ## Installation
+
+There are two main ways to install the development requirements: using `pip` or Anaconda
+
+### With `pip`
+
+1. Clone this repository
+1. Create a virtual environment with python 3.8 or higher:
+    ```
+    python -m venv .venv
+    ```
+
+1. Activate it:
+    ```
+    # In terminal (MacOS and Linux)
+    $ source .venv/bin/activate
+    ```
+    ```
+    # In cmd.exe
+    venv\Scripts\activate.bat
+    # In PowerShell
+    venv\Scripts\Activate.ps1
+    ```
+
+1. Install development requirements in the virtual environment:
+    ```
+    pip install -r dev-requirements.txt
+    ```
+
+### With Anaconda
+
 1. Open an anaconda shell
 
     See https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html for installation instructions.
@@ -21,13 +51,14 @@ Targets Windows platform with Windows Subsystem for Linux already installed.
 
 1. Create a new conda environment
     ```
-    (base) conda env create -n seat --file seat.yml
+    (base) conda create python=3.8.3 -n seat
     ```
     N.B. You can call the environment (-n \<env_name\>) whatever you like but `seat` will be used here.
 
-1. Activate the new environment and change into the main seat directory
+2. Activate the new environment, install the requirements and change into the main `seat` directory
     ```
     (base) conda activate seat
+    (seat) conda install -c conda-forge --file dev-requirements.txt
     (seat) cd seat
     ```
 
@@ -87,8 +118,6 @@ python -m demo_tests.test_02_targetspeechtwomaskers
 If the listeningeffortplayer app is running then the target speech video should be visible.
 
 
-
-
 ## Real usage
 
 - Open the ListeningEffortPlayer app
@@ -112,6 +141,19 @@ python .\gui.py
 # Once the 'jtc...' button turns green and you have selected a block you can press 'Run'
 # press the 'jtc...' button to change the settings and/or restart jacktrip.
 ```
+
+### Managing Dependencies
+Dependencies are managed using the [`pip-tools`] tool chain. Unpinned dependencies are specified in `pyproject.toml`. Pinned versions are then produced with: `pip-compile`.
+
+To add/remove packages, edit `pyproject.toml` and run the above command. To upgrade all existing dependencies run: `pip-compile --upgrade`.
+
+Dependencies for developers are listed separately as optional, with the pinned versions being saved to `dev-requirements.txt` instead. `pip-tools` can also manage these dependencies by adding extra arguments, e.g.: `pip-compile --extra dev -o dev-requirements.txt`.
+
+When dependencies are upgraded, both `requirements.txt` and `dev-requirements.txt` should be regenerated so that they are compatible with each other and then synced with your virtual environment with: `pip-sync dev-requirements.txt requirements.txt`.
+
+Versions can be restricted from updating within the `pyproject.toml` using standard python package version specifiers, i.e. `"black<23"` or `"pip-tools!=6.12.2"`.
+
+[`pip-tools`]: https://pip-tools.readthedocs.io/en/latest/
 
 
 <!--

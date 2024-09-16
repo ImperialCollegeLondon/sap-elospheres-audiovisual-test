@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+from warnings import warn
 
 import loggedprocess
 
@@ -57,6 +58,15 @@ class JackTripControl:
         # override with supplied arguments
         if args is not None:
             self.moduleConfig.set_args(args)
+
+        bin_dir = pathlib.Path(__file__).parent.parent / "bin"
+        if not self.moduleConfig["jack_root"].as_path().exists() and (bin_dir / "jackd.exe").exists():
+            warn('Jack not found at specified path, using bundled version')
+            self.moduleConfig["jack_root"] = str(bin_dir)
+        if not self.moduleConfig["jacktrip_root"].as_path().exists() and (bin_dir / "jacktrip.exe").exists():
+            warn('Jacktrip not found at specified path, using bundled version')
+            self.moduleConfig["jacktrip_root"] = str(bin_dir)
+
         self.wsl_ip = self.get_wsl_ip_address()
         self.lp = None
         self.state = State.DISCONNECTED
