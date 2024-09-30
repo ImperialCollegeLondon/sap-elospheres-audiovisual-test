@@ -22,5 +22,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "black",
-    "pip-tools"
+    "pip-tools",
+    "matplotlib",
 ]
